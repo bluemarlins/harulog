@@ -103,3 +103,12 @@ dependencies {
   implementation(libs.hilt.android)
   ksp(libs.hilt.compiler)
 }
+
+tasks.register<Exec>("buildAndInstall") {
+    group = "custom"
+    description = "Assembles debug, installs on device, and starts the MainActivity"
+    dependsOn("installDebug")
+
+    commandLine("adb", "shell", "am", "start", "-n", "com.example.harulog/com.example.harulog.MainActivity")
+}
+
