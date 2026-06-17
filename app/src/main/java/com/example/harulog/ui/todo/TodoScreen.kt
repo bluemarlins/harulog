@@ -67,7 +67,7 @@ fun DashboardPane(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -96,7 +96,7 @@ fun DashboardPane(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Category Filter Controls (All, Work, Personal)
             Row(
@@ -130,7 +130,7 @@ fun DashboardPane(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (state.todos.isEmpty() && state.schedules.isEmpty()) {
                 Box(

@@ -263,17 +263,17 @@ internal fun MainContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                 ) {
                     WelcomeHeader()
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     when (currentTab) {
                         0 -> {
                             // Calendar tab on mobile: 상단 캘린더 그리드 + 하단 상세 일정 리스트의 세로 적층형 구조
                             Column(
                                 modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 CalendarScreen(
                                     viewModel = calendarViewModel,

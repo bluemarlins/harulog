@@ -1,8 +1,10 @@
 package com.example.harulog.ui.calendar
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,7 +66,7 @@ fun CalendarPane(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             // View Mode Selector
             Row(
@@ -100,7 +102,7 @@ fun CalendarPane(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Calendar Navigation
             Row(
@@ -146,7 +148,7 @@ fun CalendarPane(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Grid Headers (Days of week)
             if (state.viewMode != CalendarViewMode.DAY) {
@@ -163,7 +165,7 @@ fun CalendarPane(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             // Calendar Content
@@ -304,6 +306,7 @@ fun DayCalendarView(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DateCell(
     date: LocalDate,
@@ -316,75 +319,83 @@ fun DateCell(
     val dayItems = state.allTodoSchedules.filter { it.eventDate == date }
     val isToday = date == LocalDate.now()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Workout Sticker (Emerald Green Circle badge / sticker overlay)
-        Box(modifier = Modifier.size(16.dp), contentAlignment = Alignment.Center) {
-            if (hasWorkout) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(SuccessWorkoutColor)
-                        .clickable { onLongClick() }
-                )
-            }
-        }
-
-        // Date Circle
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        isSelected -> MaterialTheme.colorScheme.primary
-                        isToday -> LightBackground
-                        else -> Color.Transparent
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                fontSize = 13.sp,
-                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
-                color = when {
-                    isSelected -> Color.White
-                    isToday -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onBackground
-                }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
             )
+            .padding(vertical = 2.dp, horizontal = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Date Circle
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            isSelected -> MaterialTheme.colorScheme.primary
+                            isToday -> LightBackground
+                            else -> Color.Transparent
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
+                    color = when {
+                        isSelected -> Color.White
+                        isToday -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onBackground
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Category Indicators (Dots: Work = Dark Blue, Personal = Coral / Purple)
+            Row(
+                modifier = Modifier.height(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (dayItems.any { it.category == CategoryType.WORK }) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(WorkPrimaryColor)
+                    )
+                }
+                if (dayItems.any { it.category == CategoryType.PERSONAL }) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(PersonalPrimaryColor)
+                    )
+                }
+            }
         }
 
-        // Category Indicators (Dots: Work = Dark Blue, Personal = Coral / Purple)
-        Row(
-            modifier = Modifier.height(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (dayItems.any { it.category == CategoryType.WORK }) {
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .clip(CircleShape)
-                        .background(WorkPrimaryColor)
-                )
-            }
-            if (dayItems.any { it.category == CategoryType.PERSONAL }) {
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .clip(CircleShape)
-                        .background(PersonalPrimaryColor)
-                )
-            }
+        // Workout Sticker (Emerald Green Circle badge / sticker overlay in TopEnd)
+        if (hasWorkout) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 2.dp, end = 2.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(SuccessWorkoutColor)
+            )
         }
     }
 }
