@@ -13,7 +13,9 @@ import javax.inject.Inject
 
 data class DiaryUiState(
     val selectedDate: LocalDate = LocalDate.now(),
-    val currentDiary: DiaryEntity? = null
+    val currentDiary: DiaryEntity? = null,
+    /** 다이어리가 입력된 날짜 목록 (최신 날짜 순 정렬) */
+    val allDiaryDates: List<LocalDate> = emptyList()
 )
 
 @HiltViewModel
@@ -28,22 +30,28 @@ class DiaryViewModel @Inject constructor(
     ) { selectedDate, diaries ->
         val diary = diaries.find { it.date == selectedDate }
         DiaryUiState(
-            selectedDate = selectedDate,
-            currentDiary = diary
+            selectedDate   = selectedDate,
+            currentDiary   = diary,
+            allDiaryDates  = diaries.map { it.date }.sortedDescending()
         )
     }.stateIn(
-        scope = viewModelScope,
+        scope   = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DiaryUiState()
     )
+
+    /** 드롭다운에서 날짜를 선택했을 때 해당 날짜로 이동 */
+    fun selectDate(date: LocalDate) {
+        selectedDateManager.selectDate(date)
+    }
 
     fun saveDiary(content: String) {
         viewModelScope.launch {
             val date = uiState.value.selectedDate
             repository.insertDiary(
                 DiaryEntity(
-                    date = date,
-                    content = content,
+                    date      = date,
+                    content   = content,
                     createdAt = System.currentTimeMillis()
                 )
             )
