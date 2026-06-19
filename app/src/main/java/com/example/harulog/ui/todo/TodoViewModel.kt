@@ -126,6 +126,9 @@ class TodoViewModel @Inject constructor(
         selectedDateManager.selectDate(date)
     }
 
+    /** 대시보드 화면 전용: 필터링 없는 전체 할 일 및 일정 목록을 반환합니다. */
+    fun getAllTodosForDashboard(): List<TodoScheduleEntity> = _backupData.value.todoSchedules
+
     fun setCategoryFilter(category: CategoryType?) {
         _selectedCategory.value = category
     }

@@ -7,9 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,10 +25,10 @@ import androidx.navigation3.runtime.NavKey
 import com.example.harulog.ui.calendar.CalendarScreen
 import com.example.harulog.ui.calendar.CalendarViewModel
 import com.example.harulog.ui.common.BackupRestoreCard
+import com.example.harulog.ui.dashboard.AiDashboardScreen
 import com.example.harulog.ui.diary.DiaryScreen
 import com.example.harulog.ui.diary.DiaryViewModel
 import com.example.harulog.ui.theme.GrayBorderColor
-import com.example.harulog.ui.todo.TodoScreen
 import com.example.harulog.ui.todo.TodoViewModel
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -85,11 +85,11 @@ fun MainScreen(
 
     MainContent(
         calendarViewModel = calendarViewModel,
-        todoViewModel = todoViewModel,
-        diaryViewModel = diaryViewModel,
-        onExportBackup = { exportLauncher.launch("harulog_backup.json") },
-        onImportBackup = { importLauncher.launch(arrayOf("application/json")) },
-        modifier = modifier
+        todoViewModel     = todoViewModel,
+        diaryViewModel    = diaryViewModel,
+        onExportBackup    = { exportLauncher.launch("harulog_backup.json") },
+        onImportBackup    = { importLauncher.launch(arrayOf("application/json")) },
+        modifier          = modifier
     )
 }
 
@@ -103,9 +103,10 @@ internal fun MainContent(
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
+    val isTablet      = configuration.screenWidthDp > 600
 
-    var currentTab by remember { mutableStateOf(0) } // Mobile: 0: Cal, 1: Todo, 2: Diary, 3: Settings | Tablet: 0: Split view, 1: Settings
+    // 탭 순서: 0=캘린더, 1=다이어리, 2=대시보드, 3=설정
+    var currentTab by remember { mutableStateOf(0) }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -116,28 +117,28 @@ internal fun MainContent(
                     tonalElevation = 8.dp
                 ) {
                     NavigationBarItem(
-                        selected = currentTab == 0,
-                        onClick = { currentTab = 0 },
-                        icon = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
-                        label = { Text("캘린더") }
+                        selected    = currentTab == 0,
+                        onClick     = { currentTab = 0 },
+                        icon        = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
+                        label       = { Text("캘린더") }
                     )
                     NavigationBarItem(
-                        selected = currentTab == 1,
-                        onClick = { currentTab = 1 },
-                        icon = { Icon(Icons.Outlined.List, contentDescription = "Dashboard") },
-                        label = { Text("대시보드") }
+                        selected    = currentTab == 1,
+                        onClick     = { currentTab = 1 },
+                        icon        = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
+                        label       = { Text("다이어리") }
                     )
                     NavigationBarItem(
-                        selected = currentTab == 2,
-                        onClick = { currentTab = 2 },
-                        icon = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
-                        label = { Text("다이어리") }
+                        selected    = currentTab == 2,
+                        onClick     = { currentTab = 2 },
+                        icon        = { Icon(Icons.Outlined.Analytics, contentDescription = "Dashboard") },
+                        label       = { Text("대시보드") }
                     )
                     NavigationBarItem(
-                        selected = currentTab == 3,
-                        onClick = { currentTab = 3 },
-                        icon = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
-                        label = { Text("설정") }
+                        selected    = currentTab == 3,
+                        onClick     = { currentTab = 3 },
+                        icon        = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
+                        label       = { Text("설정") }
                     )
                 }
             }
@@ -151,140 +152,144 @@ internal fun MainContent(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (isTablet) {
-                // Tablet Layout ( 좌측 Navigation Rail + Split View )
+                // ── Tablet Layout: 좌측 Navigation Rail + Split View ──────────
                 Row(modifier = Modifier.fillMaxSize()) {
                     NavigationRail(
                         containerColor = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier       = Modifier.fillMaxHeight()
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
-
                         NavigationRailItem(
                             selected = currentTab == 0,
-                            onClick = { currentTab = 0 },
-                            icon = { Icon(Icons.Outlined.DateRange, contentDescription = "기록") },
-                            label = { Text("기록") }
+                            onClick  = { currentTab = 0 },
+                            icon     = { Icon(Icons.Outlined.DateRange, contentDescription = "기록") },
+                            label    = { Text("기록") }
                         )
-
                         NavigationRailItem(
                             selected = currentTab == 1,
-                            onClick = { currentTab = 1 },
-                            icon = { Icon(Icons.Outlined.Settings, contentDescription = "백업") },
-                            label = { Text("백업") }
+                            onClick  = { currentTab = 1 },
+                            icon     = { Icon(Icons.Outlined.Analytics, contentDescription = "대시보드") },
+                            label    = { Text("대시보드") }
+                        )
+                        NavigationRailItem(
+                            selected = currentTab == 2,
+                            onClick  = { currentTab = 2 },
+                            icon     = { Icon(Icons.Outlined.Settings, contentDescription = "설정") },
+                            label    = { Text("설정") }
                         )
                     }
 
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
-                        if (currentTab == 0) {
-                            // Master-Detail Split View (Left: Calendar, Right: Todo + Diary)
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                CalendarScreen(
-                                    viewModel = calendarViewModel,
-                                    modifier = Modifier
-                                        .weight(1.2f)
-                                        .fillMaxHeight()
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .width(1.dp)
-                                        .background(GrayBorderColor)
-                                )
-
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight(),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        when (currentTab) {
+                            0 -> {
+                                // Master-Detail Split View
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    TodoScreen(
-                                        viewModel = todoViewModel,
-                                        modifier = Modifier.weight(1.2f)
+                                    CalendarScreen(
+                                        viewModel = calendarViewModel,
+                                        modifier  = Modifier.weight(1.2f).fillMaxHeight()
                                     )
-                                    DiaryScreen(
-                                        viewModel = diaryViewModel,
-                                        modifier = Modifier.weight(0.8f)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .width(1.dp)
+                                            .background(GrayBorderColor)
                                     )
+                                    Column(
+                                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        DiaryScreen(
+                                            viewModel = diaryViewModel,
+                                            modifier  = Modifier.weight(0.8f)
+                                        )
+                                    }
                                 }
                             }
-                        } else {
-                            // Backup & settings pane on Tablet
-                            Column(
-                                modifier = Modifier
-                                    .widthIn(max = 600.dp)
-                                    .fillMaxHeight()
-                                    .padding(vertical = 16.dp),
-                                verticalArrangement = Arrangement.Top,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "설정 및 백업",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.padding(bottom = 24.dp)
+                            1 -> {
+                                AiDashboardScreen(
+                                    todoViewModel = todoViewModel,
+                                    modifier      = Modifier.fillMaxSize()
                                 )
-                                BackupRestoreCard(
-                                    onExportBackup = onExportBackup,
-                                    onImportBackup = onImportBackup
-                                )
+                            }
+                            else -> {
+                                Column(
+                                    modifier = Modifier
+                                        .widthIn(max = 600.dp)
+                                        .fillMaxHeight()
+                                        .padding(vertical = 16.dp),
+                                    verticalArrangement   = Arrangement.Top,
+                                    horizontalAlignment   = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        "설정 및 백업",
+                                        fontSize   = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color      = MaterialTheme.colorScheme.onBackground,
+                                        modifier   = Modifier.padding(bottom = 24.dp)
+                                    )
+                                    BackupRestoreCard(
+                                        onExportBackup = onExportBackup,
+                                        onImportBackup = onImportBackup
+                                    )
+                                }
                             }
                         }
                     }
                 }
             } else {
-                // Mobile Layout (Single Pane switcher)
+                // ── Mobile Layout ─────────────────────────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                 ) {
-
                     when (currentTab) {
+                        // 0: 캘린더 — 상단 캘린더 그리드 + 하단 할 일/일정 리스트
                         0 -> {
-                            // Calendar tab on mobile: 상단 캘린더 그리드 + 하단 상세 일정 리스트의 세로 적층형 구조
                             Column(
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 CalendarScreen(
                                     viewModel = calendarViewModel,
-                                    modifier = Modifier.weight(1.2f)
+                                    modifier  = Modifier.weight(1.2f)
                                 )
-                                TodoScreen(
+                                com.example.harulog.ui.todo.TodoScreen(
                                     viewModel = todoViewModel,
-                                    modifier = Modifier.weight(1f)
+                                    modifier  = Modifier.weight(1f)
                                 )
                             }
                         }
+                        // 1: 다이어리
                         1 -> {
-                            TodoScreen(
-                                viewModel = todoViewModel,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                        2 -> {
                             DiaryScreen(
                                 viewModel = diaryViewModel,
-                                modifier = Modifier.fillMaxSize()
+                                modifier  = Modifier.fillMaxSize()
                             )
                         }
+                        // 2: 대시보드 (AI 요약)
+                        2 -> {
+                            AiDashboardScreen(
+                                todoViewModel = todoViewModel,
+                                modifier      = Modifier.fillMaxSize()
+                            )
+                        }
+                        // 3: 설정
                         3 -> {
                             Column(
                                 modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.Top,
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                verticalArrangement   = Arrangement.Top,
+                                horizontalAlignment   = Alignment.CenterHorizontally
                             ) {
                                 Text(
                                     "설정 및 백업",
-                                    fontSize = 20.sp,
+                                    fontSize   = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.padding(bottom = 24.dp)
+                                    color      = MaterialTheme.colorScheme.onBackground,
+                                    modifier   = Modifier.padding(bottom = 24.dp)
                                 )
                                 BackupRestoreCard(
                                     onExportBackup = onExportBackup,
@@ -298,4 +303,3 @@ internal fun MainContent(
         }
     }
 }
-
