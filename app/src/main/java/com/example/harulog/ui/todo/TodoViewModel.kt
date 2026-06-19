@@ -7,6 +7,7 @@ import com.example.harulog.data.local.entity.TodoScheduleEntity
 import com.example.harulog.data.repository.DataRepository
 import com.example.harulog.data.repository.DataBackupDto
 import com.example.harulog.utils.SelectedDateManager
+import com.example.harulog.ui.calendar.CalendarViewMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -41,24 +42,52 @@ class TodoViewModel @Inject constructor(
 
     val uiState: StateFlow<TodoUiState> = combine(
         selectedDateManager.selectedDate,
+        selectedDateManager.viewMode,
         _selectedCategory,
         repository.getAllTodoSchedules()
-    ) { selectedDate, category, allItems ->
+    ) { selectedDate, viewMode, category, allItems ->
         val filteredItems = if (category == null) {
             allItems
         } else {
             allItems.filter { it.category == category }
         }
 
-        // Schedules for the selected date
-        val schedules = filteredItems.filter { !it.isTodo && it.eventDate == selectedDate }
+        val schedules: List<TodoScheduleEntity>
+        val todos: List<TodoScheduleEntity>
 
-        // Todos for the selected date or monthly scopes within the selected month
-        val todos = filteredItems.filter {
-            it.isTodo && (
-                (!it.isMonthlyScope && it.eventDate == selectedDate) ||
-                (it.isMonthlyScope && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month)
-            )
+        when (viewMode) {
+            CalendarViewMode.DAY -> {
+                schedules = filteredItems.filter { !it.isTodo && it.eventDate == selectedDate }
+                todos = filteredItems.filter {
+                    it.isTodo && (
+                        (!it.isMonthlyScope && it.eventDate == selectedDate) ||
+                        (it.isMonthlyScope && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month)
+                    )
+                }
+            }
+            CalendarViewMode.WEEK -> {
+                val dayOfWeek = selectedDate.dayOfWeek.value % 7
+                val startOfWeek = selectedDate.minusDays(dayOfWeek.toLong())
+                val endOfWeek = startOfWeek.plusDays(6)
+
+                schedules = filteredItems.filter {
+                    !it.isTodo && it.eventDate >= startOfWeek && it.eventDate <= endOfWeek
+                }
+                todos = filteredItems.filter {
+                    it.isTodo && (
+                        (!it.isMonthlyScope && it.eventDate >= startOfWeek && it.eventDate <= endOfWeek) ||
+                        (it.isMonthlyScope && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month)
+                    )
+                }
+            }
+            CalendarViewMode.MONTH -> {
+                schedules = filteredItems.filter {
+                    !it.isTodo && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month
+                }
+                todos = filteredItems.filter {
+                    it.isTodo && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month
+                }
+            }
         }
 
         TodoUiState(

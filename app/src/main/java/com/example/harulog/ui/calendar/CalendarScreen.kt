@@ -77,9 +77,9 @@ fun CalendarPane(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 val modes = listOf(
-                    CalendarViewMode.MONTH to "월간",
+                    CalendarViewMode.DAY to "일간",
                     CalendarViewMode.WEEK to "주간",
-                    CalendarViewMode.DAY to "일간"
+                    CalendarViewMode.MONTH to "월간"
                 )
                 modes.forEach { (mode, title) ->
                     val isSelected = state.viewMode == mode
@@ -151,34 +151,27 @@ fun CalendarPane(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Grid Headers (Days of week)
-            if (state.viewMode != CalendarViewMode.DAY) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    val days = listOf("일", "월", "화", "수", "목", "금", "토")
-                    days.forEach {
-                        Text(
-                            text = it,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (it == "일") Color.Red else MaterialTheme.colorScheme.secondary
-                        )
-                    }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                val days = listOf("일", "월", "화", "수", "목", "금", "토")
+                days.forEach {
+                    Text(
+                        text = it,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (it == "일") Color.Red else MaterialTheme.colorScheme.secondary
+                    )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
             }
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Calendar Content
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                when (state.viewMode) {
-                    CalendarViewMode.MONTH -> MonthCalendarView(state, onSelectDate, onToggleWorkout)
-                    CalendarViewMode.WEEK -> WeekCalendarView(state, onSelectDate, onToggleWorkout)
-                    CalendarViewMode.DAY -> DayCalendarView(state, onToggleWorkout)
-                }
+                MonthCalendarView(state, onSelectDate, onToggleWorkout)
             }
         }
     }

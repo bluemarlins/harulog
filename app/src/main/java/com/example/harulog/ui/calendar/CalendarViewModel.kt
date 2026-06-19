@@ -29,12 +29,9 @@ class CalendarViewModel @Inject constructor(
     private val selectedDateManager: SelectedDateManager
 ) : ViewModel() {
 
-    private val _viewMode = MutableStateFlow(CalendarViewMode.MONTH)
-    val viewMode: StateFlow<CalendarViewMode> = _viewMode.asStateFlow()
-
     val uiState: StateFlow<CalendarUiState> = combine(
         selectedDateManager.selectedDate,
-        _viewMode,
+        selectedDateManager.viewMode,
         repository.getAllTodoSchedules(),
         repository.getAllExerciseStickers()
     ) { selectedDate, viewMode, todoSchedules, stickers ->
@@ -63,7 +60,7 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun setViewMode(mode: CalendarViewMode) {
-        _viewMode.value = mode
+        selectedDateManager.setViewMode(mode)
     }
 
     fun toggleWorkout(date: LocalDate) {
