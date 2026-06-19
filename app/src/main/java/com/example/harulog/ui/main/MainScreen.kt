@@ -114,6 +114,7 @@ internal fun MainContent(
     var currentTab by remember { mutableStateOf(0) } // Mobile: 0: Cal, 1: Todo, 2: Diary, 3: Settings | Tablet: 0: Split view, 1: Settings
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         bottomBar = {
             if (!isTablet) {
                 NavigationBar(
@@ -152,6 +153,7 @@ internal fun MainContent(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .consumeWindowInsets(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (isTablet) {

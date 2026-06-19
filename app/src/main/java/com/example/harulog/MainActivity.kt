@@ -25,6 +25,9 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     enableEdgeToEdge()
+    if (android.os.Build.VERSION.SDK_INT >= 29) {
+      window.isNavigationBarContrastEnforced = false
+    }
     setContent {
       HarulogTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
