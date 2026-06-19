@@ -32,6 +32,9 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/** 날짜 셀이 범위 하이라이트 내에서 차지하는 위치 */
+enum class RangePosition { NONE, SINGLE, START, MIDDLE, END }
+
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
@@ -112,16 +115,16 @@ fun CalendarPane(
             ) {
                 val formattedHeader = when (state.viewMode) {
                     CalendarViewMode.MONTH -> state.currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
-                    CalendarViewMode.WEEK -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
-                    CalendarViewMode.DAY -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E)", Locale.KOREAN))
+                    CalendarViewMode.WEEK  -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
+                    CalendarViewMode.DAY   -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E)", Locale.KOREAN))
                 }
 
                 IconButton(
                     onClick = {
                         when (state.viewMode) {
                             CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.minusMonths(1))
-                            CalendarViewMode.WEEK -> onSelectDate(state.selectedDate.minusWeeks(1))
-                            CalendarViewMode.DAY -> onSelectDate(state.selectedDate.minusDays(1))
+                            CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.minusWeeks(1))
+                            CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.minusDays(1))
                         }
                     }
                 ) {
@@ -139,8 +142,8 @@ fun CalendarPane(
                     onClick = {
                         when (state.viewMode) {
                             CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.plusMonths(1))
-                            CalendarViewMode.WEEK -> onSelectDate(state.selectedDate.plusWeeks(1))
-                            CalendarViewMode.DAY -> onSelectDate(state.selectedDate.plusDays(1))
+                            CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.plusWeeks(1))
+                            CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.plusDays(1))
                         }
                     }
                 ) {
@@ -177,27 +180,66 @@ fun CalendarPane(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 범위 위치 계산 헬퍼
+// ─────────────────────────────────────────────────────────────────────────────
+
+private fun resolveRangePosition(
+    date: LocalDate,
+    selectedDate: LocalDate,
+    viewMode: CalendarViewMode
+): RangePosition {
+    return when (viewMode) {
+        CalendarViewMode.DAY -> RangePosition.NONE
+
+        CalendarViewMode.WEEK -> {
+            val dow = selectedDate.dayOfWeek.value % 7  // 0 = Sunday
+            val start = selectedDate.minusDays(dow.toLong())
+            val end = start.plusDays(6)
+            when {
+                date < start || date > end -> RangePosition.NONE
+                start == end               -> RangePosition.SINGLE
+                date == start              -> RangePosition.START
+                date == end                -> RangePosition.END
+                else                       -> RangePosition.MIDDLE
+            }
+        }
+
+        CalendarViewMode.MONTH -> {
+            if (date.year != selectedDate.year || date.month != selectedDate.month) {
+                RangePosition.NONE
+            } else {
+                val start = selectedDate.withDayOfMonth(1)
+                val end   = selectedDate.withDayOfMonth(selectedDate.month.length(selectedDate.isLeapYear))
+                when {
+                    start == end -> RangePosition.SINGLE
+                    date == start -> RangePosition.START
+                    date == end   -> RangePosition.END
+                    else          -> RangePosition.MIDDLE
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Views
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 fun MonthCalendarView(
     state: CalendarUiState,
     onSelectDate: (LocalDate) -> Unit,
     onToggleWorkout: (LocalDate) -> Unit
 ) {
-    val firstDay = state.currentMonth.atDay(1)
-    val dayOfWeek = firstDay.dayOfWeek.value % 7
+    val firstDay    = state.currentMonth.atDay(1)
+    val dayOfWeek   = firstDay.dayOfWeek.value % 7
     val daysInMonth = state.currentMonth.lengthOfMonth()
 
-    val totalSlots = 42
-    val dates = ArrayList<LocalDate?>()
-    for (i in 0 until dayOfWeek) {
-        dates.add(null)
-    }
-    for (i in 1..daysInMonth) {
-        dates.add(state.currentMonth.atDay(i))
-    }
-    while (dates.size < totalSlots) {
-        dates.add(null)
-    }
+    val dates = ArrayList<LocalDate?>(42)
+    for (i in 0 until dayOfWeek) dates.add(null)
+    for (i in 1..daysInMonth)    dates.add(state.currentMonth.atDay(i))
+    while (dates.size < 42)      dates.add(null)
 
     Column(modifier = Modifier.fillMaxSize()) {
         for (week in 0 until 6) {
@@ -210,12 +252,14 @@ fun MonthCalendarView(
                             .fillMaxHeight()
                     ) {
                         if (date != null) {
+                            val rangePos = resolveRangePosition(date, state.selectedDate, state.viewMode)
                             DateCell(
-                                date = date,
-                                isSelected = date == state.selectedDate,
-                                state = state,
-                                onClick = { onSelectDate(date) },
-                                onLongClick = { onToggleWorkout(date) }
+                                date          = date,
+                                isSelected    = date == state.selectedDate,
+                                rangePosition = rangePos,
+                                state         = state,
+                                onClick       = { onSelectDate(date) },
+                                onLongClick   = { onToggleWorkout(date) }
                             )
                         }
                     }
@@ -231,7 +275,7 @@ fun WeekCalendarView(
     onSelectDate: (LocalDate) -> Unit,
     onToggleWorkout: (LocalDate) -> Unit
 ) {
-    val dayOfWeek = state.selectedDate.dayOfWeek.value % 7
+    val dayOfWeek   = state.selectedDate.dayOfWeek.value % 7
     val startOfWeek = state.selectedDate.minusDays(dayOfWeek.toLong())
 
     Row(modifier = Modifier.fillMaxWidth().height(80.dp)) {
@@ -243,11 +287,12 @@ fun WeekCalendarView(
                     .fillMaxHeight()
             ) {
                 DateCell(
-                    date = date,
-                    isSelected = date == state.selectedDate,
-                    state = state,
-                    onClick = { onSelectDate(date) },
-                    onLongClick = { onToggleWorkout(date) }
+                    date          = date,
+                    isSelected    = date == state.selectedDate,
+                    rangePosition = RangePosition.NONE,
+                    state         = state,
+                    onClick       = { onSelectDate(date) },
+                    onLongClick   = { onToggleWorkout(date) }
                 )
             }
         }
@@ -299,32 +344,67 @@ fun DayCalendarView(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DateCell
+// ─────────────────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DateCell(
     date: LocalDate,
     isSelected: Boolean,
+    rangePosition: RangePosition,
     state: CalendarUiState,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val primary    = MaterialTheme.colorScheme.primary
     val hasWorkout = state.allStickers.any { it.date == date && it.isExercised }
-    val dayItems = state.allTodoSchedules.filter { it.eventDate == date }
-    val isToday = date == LocalDate.now()
+    val dayItems   = state.allTodoSchedules.filter { it.eventDate == date }
+    val isToday    = date == LocalDate.now()
+
+    // 범위 하이라이트 형태: 양끝은 반원, 중간은 직사각형
+    val rangeColor = primary.copy(alpha = 0.10f)
+    val rangeShape: RoundedCornerShape = when (rangePosition) {
+        RangePosition.START  -> RoundedCornerShape(topStart = 50f, bottomStart = 50f, topEnd = 0f, bottomEnd = 0f)
+        RangePosition.END    -> RoundedCornerShape(topStart = 0f, bottomStart = 0f, topEnd = 50f, bottomEnd = 50f)
+        RangePosition.SINGLE -> RoundedCornerShape(50f)
+        else                 -> RoundedCornerShape(0f) // MIDDLE or NONE (unused)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-            .padding(vertical = 2.dp, horizontal = 2.dp),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center
     ) {
+        // ── 범위 하이라이트 배경 스트립 ──────────────────────────────────
+        if (rangePosition != RangePosition.NONE) {
+            if (rangePosition == RangePosition.MIDDLE) {
+                // 중간: 모서리 없는 전체 폭 띠
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.55f)
+                        .background(rangeColor)
+                )
+            } else {
+                // 시작/끝/단독: 반원 클리핑
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.55f)
+                        .clip(rangeShape)
+                        .background(rangeColor)
+                )
+            }
+        }
+
+        // ── 날짜 콘텐츠 ──────────────────────────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(vertical = 2.dp, horizontal = 2.dp)
         ) {
             // Date Circle
             Box(
@@ -333,9 +413,9 @@ fun DateCell(
                     .clip(CircleShape)
                     .background(
                         when {
-                            isSelected -> MaterialTheme.colorScheme.primary
-                            isToday -> LightBackground
-                            else -> Color.Transparent
+                            isSelected -> primary
+                            isToday    -> LightBackground
+                            else       -> Color.Transparent
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -346,15 +426,15 @@ fun DateCell(
                     fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
                     color = when {
                         isSelected -> Color.White
-                        isToday -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.onBackground
+                        isToday    -> primary
+                        else       -> MaterialTheme.colorScheme.onBackground
                     }
                 )
             }
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Category Indicators (Dots: Work = Dark Blue, Personal = Coral / Purple)
+            // Category Indicator Dots
             Row(
                 modifier = Modifier.height(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -379,7 +459,7 @@ fun DateCell(
             }
         }
 
-        // Workout Sticker (Emerald Green Circle badge / sticker overlay in TopEnd)
+        // Workout Sticker (TopEnd overlay badge)
         if (hasWorkout) {
             Box(
                 modifier = Modifier
