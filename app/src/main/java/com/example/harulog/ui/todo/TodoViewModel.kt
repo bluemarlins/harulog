@@ -13,13 +13,16 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 
 data class TodoUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val selectedCategory: CategoryType? = null,
     val schedules: List<TodoScheduleEntity> = emptyList(),
-    val todos: List<TodoScheduleEntity> = emptyList()
+    val todos: List<TodoScheduleEntity> = emptyList(),
+    val dateRangeText: String = ""
 )
 
 @HiltViewModel
@@ -90,11 +93,28 @@ class TodoViewModel @Inject constructor(
             }
         }
 
+        val dateRangeText = when (viewMode) {
+            CalendarViewMode.DAY -> {
+                selectedDate.format(DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN))
+            }
+            CalendarViewMode.WEEK -> {
+                val dayOfWeek = selectedDate.dayOfWeek.value % 7
+                val startOfWeek = selectedDate.minusDays(dayOfWeek.toLong())
+                val endOfWeek = startOfWeek.plusDays(6)
+                "${startOfWeek.format(DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN))} ~ ${endOfWeek.format(DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN))}"
+            }
+            CalendarViewMode.MONTH -> {
+                val lastDay = selectedDate.lengthOfMonth()
+                "${selectedDate.monthValue}월 1일 ~ ${selectedDate.monthValue}월 ${lastDay}일"
+            }
+        }
+
         TodoUiState(
             selectedDate = selectedDate,
             selectedCategory = category,
             schedules = schedules,
-            todos = todos
+            todos = todos,
+            dateRangeText = dateRangeText
         )
     }.stateIn(
         scope = viewModelScope,
@@ -140,6 +160,33 @@ class TodoViewModel @Inject constructor(
     fun toggleTodo(todo: TodoScheduleEntity) {
         viewModelScope.launch {
             repository.updateTodoSchedule(todo.copy(isCompleted = !todo.isCompleted))
+        }
+    }
+
+    fun updateTodoSchedule(
+        item: TodoScheduleEntity,
+        title: String,
+        content: String?,
+        isTodo: Boolean,
+        eventDate: LocalDate,
+        startTime: LocalTime?,
+        endTime: LocalTime?,
+        category: CategoryType,
+        isMonthlyScope: Boolean
+    ) {
+        viewModelScope.launch {
+            repository.updateTodoSchedule(
+                item.copy(
+                    title = title,
+                    content = content,
+                    isTodo = isTodo,
+                    eventDate = eventDate,
+                    startTime = startTime,
+                    endTime = endTime,
+                    category = category,
+                    isMonthlyScope = isMonthlyScope
+                )
+            )
         }
     }
 

@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
@@ -141,6 +142,88 @@ class UserScenarioTest {
         assertTrue(currentSchedules.any { it.title == "A" })
         assertTrue(currentSchedules.any { it.title == "B" })
         assertTrue(currentSchedules.any { it.title == "C" })
+    }
+
+    @Test
+    fun scenario4_dateRangeTextFormatting() = runTest {
+        val collectJobTodo = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            todoViewModel.uiState.collect {}
+        }
+
+        // Select June 17, 2026
+        val targetDate = LocalDate.of(2026, 6, 17)
+        dateManager.selectDate(targetDate)
+
+        // Day view
+        dateManager.setViewMode(CalendarViewMode.DAY)
+        testScheduler.advanceUntilIdle()
+        assertEquals("6월 17일", todoViewModel.uiState.value.dateRangeText)
+
+        // Week view
+        dateManager.setViewMode(CalendarViewMode.WEEK)
+        testScheduler.advanceUntilIdle()
+        assertEquals("6월 14일 ~ 6월 20일", todoViewModel.uiState.value.dateRangeText)
+
+        // Month view
+        dateManager.setViewMode(CalendarViewMode.MONTH)
+        testScheduler.advanceUntilIdle()
+        assertEquals("6월 1일 ~ 6월 30일", todoViewModel.uiState.value.dateRangeText)
+    }
+
+    @Test
+    fun scenario5_updateTodoScheduleAndReflectUI() = runTest {
+        val collectJobTodo = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            todoViewModel.uiState.collect {}
+        }
+
+        // Insert initial schedule
+        val initialSchedule = TodoScheduleEntity(
+            id = 10,
+            title = "연차",
+            content = null,
+            isTodo = false,
+            eventDate = LocalDate.of(2026, 6, 17),
+            startTime = null,
+            endTime = null,
+            category = CategoryType.WORK
+        )
+        fakeRepository.insertTodoSchedule(initialSchedule)
+        testScheduler.advanceUntilIdle()
+
+        // Set selected date and view mode
+        dateManager.selectDate(LocalDate.of(2026, 6, 17))
+        dateManager.setViewMode(CalendarViewMode.DAY)
+        testScheduler.advanceUntilIdle()
+
+        // Verify initial state
+        assertEquals(1, todoViewModel.uiState.value.schedules.size)
+        assertEquals("연차", todoViewModel.uiState.value.schedules[0].title)
+        assertEquals(CategoryType.WORK, todoViewModel.uiState.value.schedules[0].category)
+
+        // Update item to "가족 행사", Category PERSONAL
+        todoViewModel.updateTodoSchedule(
+            item = initialSchedule,
+            title = "가족 행사",
+            content = null,
+            isTodo = false,
+            eventDate = LocalDate.of(2026, 6, 17),
+            startTime = null,
+            endTime = null,
+            category = CategoryType.PERSONAL,
+            isMonthlyScope = false
+        )
+        testScheduler.advanceUntilIdle()
+
+        // Verify updated state
+        assertEquals(1, todoViewModel.uiState.value.schedules.size)
+        assertEquals("가족 행사", todoViewModel.uiState.value.schedules[0].title)
+        assertEquals(CategoryType.PERSONAL, todoViewModel.uiState.value.schedules[0].category)
+
+        // Verify in fake repository too
+        val repoSchedules = fakeRepository.getAllTodoSchedules().first()
+        assertEquals(1, repoSchedules.size)
+        assertEquals("가족 행사", repoSchedules[0].title)
+        assertEquals(CategoryType.PERSONAL, repoSchedules[0].category)
     }
 }
 

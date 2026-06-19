@@ -1,8 +1,10 @@
 package com.example.harulog.ui.todo
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,10 +46,12 @@ fun TodoScreen(
         onToggleTodo = viewModel::toggleTodo,
         onDeleteTodoSchedule = viewModel::deleteTodoSchedule,
         onAddTodoSchedule = viewModel::addTodoSchedule,
+        onUpdateTodoSchedule = viewModel::updateTodoSchedule,
         modifier = modifier
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DashboardPane(
     state: TodoUiState,
@@ -54,9 +59,14 @@ fun DashboardPane(
     onToggleTodo: (TodoScheduleEntity) -> Unit,
     onDeleteTodoSchedule: (TodoScheduleEntity) -> Unit,
     onAddTodoSchedule: (String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
+    onUpdateTodoSchedule: (TodoScheduleEntity, String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isAddDialogOpen by remember { mutableStateOf(false) }
+    var selectedItemForOptions by remember { mutableStateOf<TodoScheduleEntity?>(null) }
+    var isOptionsDialogOpen by remember { mutableStateOf(false) }
+    var isEditDialogOpen by remember { mutableStateOf(false) }
+    var itemToEdit by remember { mutableStateOf<TodoScheduleEntity?>(null) }
 
     Card(
         modifier = modifier
@@ -74,12 +84,22 @@ fun DashboardPane(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "오늘의 할 일 및 일정",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Column {
+                    Text(
+                        "오늘의 할 일 및 일정",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (state.dateRangeText.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = state.dateRangeText,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
 
                 IconButton(
                     onClick = { isAddDialogOpen = true },
@@ -161,7 +181,14 @@ fun DashboardPane(
                             )
                         }
                         items(state.schedules) { schedule ->
-                            ScheduleCardItem(schedule, onDeleteTodoSchedule)
+                            ScheduleCardItem(
+                                schedule = schedule,
+                                onLongClick = {
+                                    selectedItemForOptions = schedule
+                                    isOptionsDialogOpen = true
+                                },
+                                onDelete = onDeleteTodoSchedule
+                            )
                         }
                     }
 
@@ -177,7 +204,15 @@ fun DashboardPane(
                             )
                         }
                         items(state.todos) { todo ->
-                            TodoCardItem(todo, onToggleTodo, onDeleteTodoSchedule)
+                            TodoCardItem(
+                                todo = todo,
+                                onToggle = onToggleTodo,
+                                onLongClick = {
+                                    selectedItemForOptions = todo
+                                    isOptionsDialogOpen = true
+                                },
+                                onDelete = onDeleteTodoSchedule
+                            )
                         }
                     }
                 }
@@ -186,17 +221,51 @@ fun DashboardPane(
     }
 
     if (isAddDialogOpen) {
-        AddItemDialog(
+        AddEditItemDialog(
             selectedDate = state.selectedDate,
             onDismiss = { isAddDialogOpen = false },
-            onAddTodoSchedule = onAddTodoSchedule
+            onConfirm = { title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope ->
+                onAddTodoSchedule(title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope)
+            }
+        )
+    }
+
+    if (isOptionsDialogOpen && selectedItemForOptions != null) {
+        ItemOptionsDialog(
+            item = selectedItemForOptions!!,
+            onDismiss = { isOptionsDialogOpen = false },
+            onEdit = {
+                itemToEdit = selectedItemForOptions
+                isOptionsDialogOpen = false
+                isEditDialogOpen = true
+            },
+            onDelete = {
+                onDeleteTodoSchedule(selectedItemForOptions!!)
+                isOptionsDialogOpen = false
+            }
+        )
+    }
+
+    if (isEditDialogOpen && itemToEdit != null) {
+        AddEditItemDialog(
+            selectedDate = state.selectedDate,
+            editingItem = itemToEdit,
+            onDismiss = {
+                isEditDialogOpen = false
+                itemToEdit = null
+            },
+            onConfirm = { title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope ->
+                onUpdateTodoSchedule(itemToEdit!!, title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope)
+            }
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScheduleCardItem(
     schedule: TodoScheduleEntity,
+    onLongClick: () -> Unit,
     onDelete: (TodoScheduleEntity) -> Unit
 ) {
     val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
@@ -208,6 +277,10 @@ fun ScheduleCardItem(
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
             .border(1.dp, GrayBorderColor, RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -253,10 +326,12 @@ fun ScheduleCardItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TodoCardItem(
     todo: TodoScheduleEntity,
     onToggle: (TodoScheduleEntity) -> Unit,
+    onLongClick: () -> Unit,
     onDelete: (TodoScheduleEntity) -> Unit
 ) {
     val themeColor = if (todo.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
@@ -268,6 +343,10 @@ fun TodoCardItem(
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
             .border(1.dp, GrayBorderColor, RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -317,16 +396,26 @@ fun TodoCardItem(
 }
 
 @Composable
-fun AddItemDialog(
+fun AddEditItemDialog(
     selectedDate: LocalDate,
+    editingItem: TodoScheduleEntity? = null,
     onDismiss: () -> Unit,
-    onAddTodoSchedule: (String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit
+    onConfirm: (
+        title: String,
+        content: String?,
+        isTodo: Boolean,
+        eventDate: LocalDate,
+        startTime: LocalTime?,
+        endTime: LocalTime?,
+        category: CategoryType,
+        isMonthlyScope: Boolean
+    ) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var itemType by remember { mutableStateOf("TODO") }
-    var category by remember { mutableStateOf(CategoryType.WORK) }
-    var todoType by remember { mutableStateOf("TARGET_DATE") }
-    var time by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(editingItem?.title ?: "") }
+    var itemType by remember { mutableStateOf(if (editingItem?.isTodo == false) "SCHEDULE" else "TODO") }
+    var category by remember { mutableStateOf(editingItem?.category ?: CategoryType.WORK) }
+    var todoType by remember { mutableStateOf(if (editingItem?.isMonthlyScope == true) "MONTHLY_SCOPE" else "TARGET_DATE") }
+    var time by remember { mutableStateOf(editingItem?.startTime?.toString() ?: "") }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -342,7 +431,7 @@ fun AddItemDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "새 항목 생성",
+                    if (editingItem != null) "항목 수정" else "새 항목 생성",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -426,7 +515,6 @@ fun AddItemDialog(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                // Add button text
                                 Text(label, fontSize = 12.sp)
                             }
                         }
@@ -454,13 +542,14 @@ fun AddItemDialog(
                     Button(
                         onClick = {
                             if (title.isNotBlank()) {
+                                val eventDate = editingItem?.eventDate ?: selectedDate
                                 if (itemType == "TODO") {
                                     val isMonthly = todoType == "MONTHLY_SCOPE"
-                                    onAddTodoSchedule(
+                                    onConfirm(
                                         title,
-                                        null,
+                                        editingItem?.content,
                                         true,
-                                        selectedDate,
+                                        eventDate,
                                         null,
                                         null,
                                         category,
@@ -472,24 +561,93 @@ fun AddItemDialog(
                                     } catch (e: Exception) {
                                         null
                                     }
-                                    onAddTodoSchedule(
+                                    onConfirm(
                                         title,
-                                        null,
+                                        editingItem?.content,
                                         false,
-                                        selectedDate,
+                                        eventDate,
                                         parsedTime,
                                         null,
                                         category,
                                         false
                                     )
                                 }
-                                onDismiss()
                             }
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("생성")
+                        Text(if (editingItem != null) "저장" else "생성")
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ItemOptionsDialog(
+    item: TodoScheduleEntity,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, GrayBorderColor)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "\"${item.title}\" 항목 관리",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("수정")
+                    }
+
+                    Button(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("삭제")
+                    }
+                }
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("취소", color = MaterialTheme.colorScheme.secondary)
                 }
             }
         }
