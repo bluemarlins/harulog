@@ -6,9 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.List
@@ -17,8 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -32,8 +28,6 @@ import com.example.harulog.ui.common.BackupRestoreCard
 import com.example.harulog.ui.diary.DiaryScreen
 import com.example.harulog.ui.diary.DiaryViewModel
 import com.example.harulog.ui.theme.GrayBorderColor
-import com.example.harulog.ui.theme.LightPrimary
-import com.example.harulog.ui.theme.LightTertiary
 import com.example.harulog.ui.todo.TodoScreen
 import com.example.harulog.ui.todo.TodoViewModel
 import java.io.BufferedReader
@@ -164,24 +158,6 @@ internal fun MainContent(
                         modifier = Modifier.fillMaxHeight()
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(LightPrimary, LightTertiary)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = Color.White
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
 
                         NavigationRailItem(
                             selected = currentTab == 0,
@@ -267,8 +243,6 @@ internal fun MainContent(
                         .fillMaxSize()
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                 ) {
-                    WelcomeHeader()
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     when (currentTab) {
                         0 -> {
@@ -325,43 +299,3 @@ internal fun MainContent(
     }
 }
 
-@Composable
-fun WelcomeHeader() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                "반갑습니다 👋",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Text(
-                "오늘의 하루로그를 기록하세요",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(LightPrimary, LightTertiary)
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = "Profile",
-                tint = Color.White
-            )
-        }
-    }
-}

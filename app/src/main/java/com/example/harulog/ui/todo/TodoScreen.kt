@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,6 +60,7 @@ fun DashboardPane(
     onAddTodoSchedule: (String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
     onUpdateTodoSchedule: (TodoScheduleEntity, String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
     modifier: Modifier = Modifier
+
 ) {
     var isAddDialogOpen by remember { mutableStateOf(false) }
     var selectedItemForOptions by remember { mutableStateOf<TodoScheduleEntity?>(null) }
@@ -186,8 +186,7 @@ fun DashboardPane(
                                 onLongClick = {
                                     selectedItemForOptions = schedule
                                     isOptionsDialogOpen = true
-                                },
-                                onDelete = onDeleteTodoSchedule
+                                }
                             )
                         }
                     }
@@ -210,8 +209,7 @@ fun DashboardPane(
                                 onLongClick = {
                                     selectedItemForOptions = todo
                                     isOptionsDialogOpen = true
-                                },
-                                onDelete = onDeleteTodoSchedule
+                                }
                             )
                         }
                     }
@@ -265,8 +263,7 @@ fun DashboardPane(
 @Composable
 fun ScheduleCardItem(
     schedule: TodoScheduleEntity,
-    onLongClick: () -> Unit,
-    onDelete: (TodoScheduleEntity) -> Unit
+    onLongClick: () -> Unit
 ) {
     val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
     val bgColor = if (schedule.category == CategoryType.WORK) WorkBackgroundColor else PersonalBackgroundColor
@@ -314,15 +311,6 @@ fun ScheduleCardItem(
                 )
             }
         }
-
-        IconButton(onClick = { onDelete(schedule) }) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Delete",
-                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
     }
 }
 
@@ -331,8 +319,7 @@ fun ScheduleCardItem(
 fun TodoCardItem(
     todo: TodoScheduleEntity,
     onToggle: (TodoScheduleEntity) -> Unit,
-    onLongClick: () -> Unit,
-    onDelete: (TodoScheduleEntity) -> Unit
+    onLongClick: () -> Unit
 ) {
     val themeColor = if (todo.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
     val bgColor = if (todo.category == CategoryType.WORK) WorkBackgroundColor else PersonalBackgroundColor
@@ -382,15 +369,6 @@ fun TodoCardItem(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-        }
-
-        IconButton(onClick = { onDelete(todo) }) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Delete",
-                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }
