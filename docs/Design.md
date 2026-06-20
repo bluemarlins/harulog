@@ -70,6 +70,17 @@
 * **오늘 날짜**: `LightBackground` 원형 배경, 텍스트는 `LightPrimary` 색상 Bold.
 * **하단 인디케이터**: 당일 할 일/일정 카테고리에 맞춰 작은 닷(`4.dp` 원형) 표시.
 
+### 4.5 TimePicker Dialog (시간 선택 다이얼로그)
+* 일정(SCHEDULE) 등록/수정 시 시간 지정을 위해 플로팅되는 다이얼로그.
+* **둥근 모서리 (Shape)**: `RoundedCornerShape(24.dp)` 적용.
+* **배경색**: `MaterialTheme.colorScheme.surface`
+* **내부 여백 (Padding)**: `20.dp`
+* **구조**: 
+  - 상단 중앙에 "시간 선택" 타이틀 (18sp, Bold).
+  - 중앙에 Material 3 `TimePicker`를 배치하여 24시간 형식 지원.
+  - 하단 우측에 '취소' 및 '확인' 액션 버튼 배치.
+
+
 ---
 
 ## 5. 반응형 레이아웃 정책 (Adaptive Responsive Layout)

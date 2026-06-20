@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -393,7 +394,13 @@ fun AddEditItemDialog(
     var itemType by remember { mutableStateOf(if (editingItem?.isTodo == false) "SCHEDULE" else "TODO") }
     var category by remember { mutableStateOf(editingItem?.category ?: CategoryType.WORK) }
     var todoType by remember { mutableStateOf(if (editingItem?.isMonthlyScope == true) "MONTHLY_SCOPE" else "TARGET_DATE") }
-    var time by remember { mutableStateOf(editingItem?.startTime?.toString() ?: "") }
+
+    // 일정 시간 상태
+    var isAllDay by remember { mutableStateOf(editingItem?.startTime == null) }
+    var startTimeState by remember { mutableStateOf(editingItem?.startTime) }
+    var endTimeState by remember { mutableStateOf(editingItem?.endTime) }
+    // 어떤 시간 선택기를 열지 ("start" | "end" | null)
+    var timePickerTarget by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -498,13 +505,91 @@ fun AddEditItemDialog(
                         }
                     }
                 } else {
-                    OutlinedTextField(
-                        value = time,
-                        onValueChange = { time = it },
-                        label = { Text("시간 정보 (예: 14:00, 선택 사항)") },
+                    // ── 일정 시간 선택 UI ────────────────────────────────
+                    // 하루 종일 스위치
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("하루 종일", fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface)
+                        Switch(
+                            checked = isAllDay,
+                            onCheckedChange = { checked ->
+                                isAllDay = checked
+                                if (checked) {
+                                    startTimeState = null
+                                    endTimeState   = null
+                                }
+                            }
+                        )
+                    }
+
+                    // 시작 시간 ~ 종료 시간 선택 (하루 종일 OFF일 때만)
+                    if (!isAllDay) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // 시작 시간 버튼
+                            OutlinedButton(
+                                onClick = { timePickerTarget = "start" },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.AccessTime,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    startTimeState?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                                        ?: "시작 시간",
+                                    fontSize = 13.sp
+                                )
+                            }
+                            Text(
+                                "~",
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            // 종료 시간 버튼
+                            OutlinedButton(
+                                onClick = { timePickerTarget = "end" },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.AccessTime,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    endTimeState?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                                        ?: "종료 시간",
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+
+                    // TimePicker 다이얼로그
+                    if (timePickerTarget != null) {
+                        TimePickerDialog(
+                            initialTime = if (timePickerTarget == "start") startTimeState
+                                          else endTimeState,
+                            onDismiss = { timePickerTarget = null },
+                            onConfirm = { selected ->
+                                if (timePickerTarget == "start") startTimeState = selected
+                                else endTimeState = selected
+                                timePickerTarget = null
+                            }
+                        )
+                    }
                 }
 
                 // Action Buttons
@@ -534,18 +619,13 @@ fun AddEditItemDialog(
                                         isMonthly
                                     )
                                 } else {
-                                    val parsedTime = try {
-                                        if (time.isNotBlank()) LocalTime.parse(time.trim()) else null
-                                    } catch (e: Exception) {
-                                        null
-                                    }
                                     onConfirm(
                                         title,
                                         editingItem?.content,
                                         false,
                                         eventDate,
-                                        parsedTime,
-                                        null,
+                                        if (isAllDay) null else startTimeState,
+                                        if (isAllDay) null else endTimeState,
                                         category,
                                         false
                                     )
@@ -626,6 +706,65 @@ fun ItemOptionsDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("취소", color = MaterialTheme.colorScheme.secondary)
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TimePickerDialog — Material3 TimePicker를 Dialog로 감싼 컴포저블
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialog(
+    initialTime: LocalTime?,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalTime) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour   = initialTime?.hour   ?: 9,
+        initialMinute = initialTime?.minute ?: 0,
+        is24Hour      = true
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = androidx.compose.ui.Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            shape  = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier                = androidx.compose.ui.Modifier.padding(20.dp),
+                horizontalAlignment     = Alignment.CenterHorizontally,
+                verticalArrangement     = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "시간 선택",
+                    fontSize   = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = MaterialTheme.colorScheme.onSurface
+                )
+
+                TimePicker(state = state)
+
+                Row(
+                    modifier              = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) { Text("취소") }
+                    Spacer(modifier = androidx.compose.ui.Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            onConfirm(LocalTime.of(state.hour, state.minute))
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("확인")
+                    }
                 }
             }
         }
