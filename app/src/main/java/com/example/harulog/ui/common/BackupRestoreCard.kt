@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.example.harulog.ui.theme.GrayBorderColor
-import com.example.harulog.ui.theme.LightBackground
 
 @Composable
 fun BackupRestoreCard(
@@ -69,7 +68,7 @@ fun BackupRestoreCard(
                     onClick = onImportBackup,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = LightBackground, contentColor = MaterialTheme.colorScheme.onSurface)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                 ) {
                     Icon(
                         Icons.Outlined.Refresh,

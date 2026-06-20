@@ -139,8 +139,8 @@ fun DashboardPane(
                     Button(
                         onClick = { onSetCategoryFilter(cat) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) chipColor else LightBackground,
-                            contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                            containerColor = if (isSelected) chipColor else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -426,7 +426,7 @@ fun AddEditItemDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(LightBackground, RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                         .padding(2.dp)
                 ) {
                     listOf("TODO" to "할 일", "SCHEDULE" to "일정").forEach { (type, label) ->
@@ -471,8 +471,8 @@ fun AddEditItemDialog(
                         Button(
                             onClick = { category = cat },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSel) color else LightBackground,
-                                contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurface
+                                containerColor = if (isSel) color else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
@@ -494,8 +494,8 @@ fun AddEditItemDialog(
                             Button(
                                 onClick = { todoType = type },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSel) MaterialTheme.colorScheme.primary else LightBackground,
-                                    contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurface
+                                    containerColor = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)

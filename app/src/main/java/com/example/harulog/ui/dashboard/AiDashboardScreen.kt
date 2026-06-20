@@ -334,7 +334,7 @@ private fun EmptyStateCard(message: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(LightBackground)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, GrayBorderColor, RoundedCornerShape(14.dp))
             .padding(20.dp),
         contentAlignment = Alignment.Center

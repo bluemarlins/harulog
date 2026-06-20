@@ -75,7 +75,7 @@ fun CalendarPane(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(LightBackground, RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
@@ -324,7 +324,7 @@ fun DayCalendarView(
             modifier = Modifier
                 .size(96.dp)
                 .clip(CircleShape)
-                .background(if (hasWorkout) SuccessWorkoutColor else LightBackground)
+                .background(if (hasWorkout) SuccessWorkoutColor else MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { onToggleWorkout(state.selectedDate) },
             contentAlignment = Alignment.Center
         ) {
@@ -414,7 +414,7 @@ fun DateCell(
                     .background(
                         when {
                             isSelected -> primary
-                            isToday    -> LightBackground
+                            isToday    -> MaterialTheme.colorScheme.surfaceVariant
                             else       -> Color.Transparent
                         }
                     ),
