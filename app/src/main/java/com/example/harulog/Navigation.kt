@@ -10,12 +10,14 @@ import com.example.harulog.ui.calendar.CalendarViewModel
 import com.example.harulog.ui.diary.DiaryViewModel
 import com.example.harulog.ui.main.MainScreen
 import com.example.harulog.ui.todo.TodoViewModel
+import com.example.harulog.utils.ThemeSettingsManager
 
 @Composable
 fun MainNavigation(
     calendarViewModel: CalendarViewModel,
     todoViewModel: TodoViewModel,
-    diaryViewModel: DiaryViewModel
+    diaryViewModel: DiaryViewModel,
+    themeSettingsManager: ThemeSettingsManager
 ) {
   val backStack = rememberNavBackStack(Main)
 
@@ -29,6 +31,7 @@ fun MainNavigation(
             calendarViewModel = calendarViewModel,
             todoViewModel = todoViewModel,
             diaryViewModel = diaryViewModel,
+            themeSettingsManager = themeSettingsManager,
             onItemClick = { navKey -> backStack.add(navKey) },
             modifier = Modifier.fillMaxSize()
           )

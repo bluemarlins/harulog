@@ -4,13 +4,22 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.harulog.utils.ThemeMode
+import com.example.harulog.utils.ThemeSettingsManager
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +47,7 @@ fun MainScreen(
     calendarViewModel: CalendarViewModel,
     todoViewModel: TodoViewModel,
     diaryViewModel: DiaryViewModel,
+    themeSettingsManager: ThemeSettingsManager,
     onItemClick: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,6 +97,7 @@ fun MainScreen(
         calendarViewModel = calendarViewModel,
         todoViewModel     = todoViewModel,
         diaryViewModel    = diaryViewModel,
+        themeSettingsManager = themeSettingsManager,
         onExportBackup    = { exportLauncher.launch("harulog_backup.json") },
         onImportBackup    = { importLauncher.launch(arrayOf("application/json")) },
         modifier          = modifier
@@ -98,6 +109,7 @@ internal fun MainContent(
     calendarViewModel: CalendarViewModel,
     todoViewModel: TodoViewModel,
     diaryViewModel: DiaryViewModel,
+    themeSettingsManager: ThemeSettingsManager,
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
     modifier: Modifier = Modifier
@@ -220,7 +232,7 @@ internal fun MainContent(
                                         .widthIn(max = 600.dp)
                                         .fillMaxHeight()
                                         .padding(vertical = 16.dp),
-                                    verticalArrangement   = Arrangement.Top,
+                                    verticalArrangement   = Arrangement.spacedBy(16.dp),
                                     horizontalAlignment   = Alignment.CenterHorizontally
                                 ) {
                                     Text(
@@ -228,8 +240,9 @@ internal fun MainContent(
                                         fontSize   = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color      = MaterialTheme.colorScheme.onBackground,
-                                        modifier   = Modifier.padding(bottom = 24.dp)
+                                        modifier   = Modifier.padding(bottom = 8.dp)
                                     )
+                                    ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
                                     BackupRestoreCard(
                                         onExportBackup = onExportBackup,
                                         onImportBackup = onImportBackup
@@ -281,7 +294,7 @@ internal fun MainContent(
                         3 -> {
                             Column(
                                 modifier = Modifier.fillMaxSize(),
-                                verticalArrangement   = Arrangement.Top,
+                                verticalArrangement   = Arrangement.spacedBy(16.dp),
                                 horizontalAlignment   = Alignment.CenterHorizontally
                             ) {
                                 Text(
@@ -289,8 +302,9 @@ internal fun MainContent(
                                     fontSize   = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color      = MaterialTheme.colorScheme.onBackground,
-                                    modifier   = Modifier.padding(bottom = 24.dp)
+                                    modifier   = Modifier.padding(bottom = 8.dp)
                                 )
+                                ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
                                 BackupRestoreCard(
                                     onExportBackup = onExportBackup,
                                     onImportBackup = onImportBackup
@@ -303,3 +317,76 @@ internal fun MainContent(
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThemeSettingsCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ThemeSettingsCard(
+    themeSettingsManager: ThemeSettingsManager,
+    modifier: Modifier = Modifier
+) {
+    val themeMode by themeSettingsManager.themeMode.collectAsStateWithLifecycle()
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, GrayBorderColor, RoundedCornerShape(14.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "디자인 테마 설정",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(
+                    ThemeMode.SYSTEM to "시스템 기본값",
+                    ThemeMode.LIGHT to "라이트 모드",
+                    ThemeMode.DARK to "다크 모드"
+                ).forEach { (mode, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { themeSettingsManager.setThemeMode(mode) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RadioButton(
+                            selected = themeMode == mode,
+                            onClick = { themeSettingsManager.setThemeMode(mode) }
+                        )
+                        Text(
+                            text = label,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
