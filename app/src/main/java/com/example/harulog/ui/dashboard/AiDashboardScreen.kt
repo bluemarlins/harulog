@@ -2,7 +2,6 @@ package com.example.harulog.ui.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -223,7 +222,12 @@ private fun DashboardSectionHeader(
 /** 미완료 월간 할 일 — 경고 강조 카드 */
 @Composable
 private fun UrgentTodoCard(todo: TodoScheduleEntity) {
-    val themeColor = if (todo.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val themeColor = if (todo.category == CategoryType.WORK) {
+        if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
+    } else {
+        if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
+    }
 
     Row(
         modifier = Modifier
@@ -254,7 +258,7 @@ private fun UrgentTodoCard(todo: TodoScheduleEntity) {
             Text(
                 "${if (todo.category == CategoryType.WORK) "업무" else "개인"} · 월간 범위형",
                 fontSize = 11.sp,
-                color    = MaterialTheme.colorScheme.secondary
+                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
             )
         }
         Icon(
@@ -269,14 +273,18 @@ private fun UrgentTodoCard(todo: TodoScheduleEntity) {
 /** 이번 주 일정 카드 */
 @Composable
 private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
-    val isDark = isSystemInDarkTheme()
-    val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val themeColor = if (schedule.category == CategoryType.WORK) {
+        if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
+    } else {
+        if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
+    }
     val bgColor    = if (schedule.category == CategoryType.WORK) {
         if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
     } else {
         if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
     }
-    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
     val isToday    = schedule.eventDate == today
     val dayFormatter = DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN)
 
@@ -308,13 +316,13 @@ private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
                 Text(
                     schedule.eventDate.format(dayFormatter),
                     fontSize = 11.sp,
-                    color    = if (isToday) themeColor else MaterialTheme.colorScheme.secondary,
+                    color    = if (isToday) themeColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
                 )
                 if (schedule.startTime != null) {
-                    Text("·", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text("·", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
                     Text(schedule.startTime.toString(), fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.secondary)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
                 }
             }
         }
@@ -337,12 +345,13 @@ private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
 
 @Composable
 private fun EmptyStateCard(message: String) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(14.dp))
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(14.dp))
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -353,12 +362,13 @@ private fun EmptyStateCard(message: String) {
 /** AI 기능 예정 안내 카드 */
 @Composable
 private fun AiComingSoonCard() {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(16.dp))
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

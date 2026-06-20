@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.harulog.data.local.entity.CategoryType
 import com.example.harulog.data.local.entity.TodoScheduleEntity
+import com.example.harulog.ui.common.SegmentedControl
 import com.example.harulog.ui.theme.*
 import java.time.LocalDate
 import java.time.LocalTime
@@ -70,10 +70,11 @@ fun DashboardPane(
     var isEditDialogOpen by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<TodoScheduleEntity?>(null) }
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Card(
         modifier = modifier
             .shadow(4.dp, RoundedCornerShape(24.dp))
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(24.dp)),
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(24.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
@@ -121,36 +122,26 @@ fun DashboardPane(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Category Filter Controls (All, Work, Personal)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val filters = listOf(
-                    null to "전체",
-                    CategoryType.WORK to "업무",
-                    CategoryType.PERSONAL to "개인"
-                )
-                filters.forEach { (cat, label) ->
-                    val isSelected = state.selectedCategory == cat
-                    val chipColor = when (cat) {
-                        CategoryType.WORK -> WorkPrimaryColor
-                        CategoryType.PERSONAL -> PersonalPrimaryColor
+            SegmentedControl(
+                items = listOf(null, CategoryType.WORK, CategoryType.PERSONAL),
+                selectedItem = state.selectedCategory,
+                onItemSelect = onSetCategoryFilter,
+                activeColorProvider = { cat ->
+                    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+                    when (cat) {
+                        CategoryType.WORK -> if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
+                        CategoryType.PERSONAL -> if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
                         else -> MaterialTheme.colorScheme.primary
                     }
-                    Button(
-                        onClick = { onSetCategoryFilter(cat) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) chipColor else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                },
+                labelProvider = { cat ->
+                    when (cat) {
+                        CategoryType.WORK -> "업무"
+                        CategoryType.PERSONAL -> "개인"
+                        else -> "전체"
                     }
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -267,14 +258,18 @@ fun ScheduleCardItem(
     schedule: TodoScheduleEntity,
     onLongClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val themeColor = if (schedule.category == CategoryType.WORK) {
+        if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
+    } else {
+        if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
+    }
     val bgColor = if (schedule.category == CategoryType.WORK) {
         if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
     } else {
         if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
     }
-    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
 
     Row(
         modifier = Modifier
@@ -315,7 +310,7 @@ fun ScheduleCardItem(
                 Text(
                     timeStr,
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
             }
         }
@@ -329,14 +324,18 @@ fun TodoCardItem(
     onToggle: (TodoScheduleEntity) -> Unit,
     onLongClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val themeColor = if (todo.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val themeColor = if (todo.category == CategoryType.WORK) {
+        if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
+    } else {
+        if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
+    }
     val bgColor = if (todo.category == CategoryType.WORK) {
         if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
     } else {
         if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
     }
-    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
 
     Row(
         modifier = Modifier
@@ -380,7 +379,7 @@ fun TodoCardItem(
                 Text(
                     "| ${todo.eventDate.format(DateTimeFormatter.ofPattern(if (todo.isMonthlyScope) "yyyy-MM" else "yyyy-MM-dd"))}",
                     fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
             }
         }
@@ -662,6 +661,7 @@ fun ItemOptionsDialog(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -670,7 +670,7 @@ fun ItemOptionsDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GrayBorderColor)
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) DarkBorderColor else GrayBorderColor)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),

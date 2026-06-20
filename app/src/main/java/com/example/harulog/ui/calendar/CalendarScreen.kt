@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.harulog.data.local.entity.CategoryType
+import com.example.harulog.ui.common.SegmentedControl
 import com.example.harulog.ui.theme.*
 import java.time.LocalDate
 import java.time.YearMonth
@@ -72,38 +73,18 @@ fun CalendarPane(
                 .padding(12.dp)
         ) {
             // View Mode Selector
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                val modes = listOf(
-                    CalendarViewMode.DAY to "일간",
-                    CalendarViewMode.WEEK to "주간",
-                    CalendarViewMode.MONTH to "월간"
-                )
-                modes.forEach { (mode, title) ->
-                    val isSelected = state.viewMode == mode
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { onSetViewMode(mode) }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            title,
-                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onBackground,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp
-                        )
+            SegmentedControl(
+                items = listOf(CalendarViewMode.DAY, CalendarViewMode.WEEK, CalendarViewMode.MONTH),
+                selectedItem = state.viewMode,
+                onItemSelect = onSetViewMode,
+                labelProvider = { mode ->
+                    when (mode) {
+                        CalendarViewMode.DAY -> "일간"
+                        CalendarViewMode.WEEK -> "주간"
+                        CalendarViewMode.MONTH -> "월간"
                     }
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 

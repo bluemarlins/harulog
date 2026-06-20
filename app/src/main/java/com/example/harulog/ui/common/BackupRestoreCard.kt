@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.example.harulog.ui.theme.GrayBorderColor
+import com.example.harulog.ui.theme.DarkBorderColor
+import com.example.harulog.ui.theme.DarkBackground
 
 @Composable
 fun BackupRestoreCard(
@@ -21,11 +23,12 @@ fun BackupRestoreCard(
     onImportBackup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Card(
         modifier = modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(20.dp))
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(20.dp)),
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(

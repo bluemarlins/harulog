@@ -33,4 +33,6 @@ val PersonalBackgroundColor = Color(0xFFFDF2F8) // Light Purple / Pink
 val PersonalDarkBackgroundColor = Color(0xFF4C0519) // Dark Rose for Dark Mode
 val SuccessWorkoutColor = Color(0xFF10B981)     // Emerald Green (Success)
 val GrayBorderColor = Color(0xFFE2E8F0)
-
+val WorkDarkPrimaryColor = Color(0xFF60A5FA)
+val PersonalDarkPrimaryColor = Color(0xFFF472B6)
+val DarkBorderColor = Color(0xFF2D3748)

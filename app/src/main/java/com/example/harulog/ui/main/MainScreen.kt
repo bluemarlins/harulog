@@ -38,6 +38,9 @@ import com.example.harulog.ui.dashboard.AiDashboardScreen
 import com.example.harulog.ui.diary.DiaryScreen
 import com.example.harulog.ui.diary.DiaryViewModel
 import com.example.harulog.ui.theme.GrayBorderColor
+import com.example.harulog.ui.theme.DarkBorderColor
+import com.example.harulog.ui.theme.DarkBackground
+import com.example.harulog.ui.common.SegmentedControl
 import com.example.harulog.ui.todo.TodoViewModel
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -329,13 +332,14 @@ private fun ThemeSettingsCard(
 ) {
     val themeMode by themeSettingsManager.themeMode.collectAsStateWithLifecycle()
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Card(
         modifier = modifier
             .fillMaxWidth()
             .shadow(1.dp, RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(14.dp)),
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(14.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
@@ -360,32 +364,18 @@ private fun ThemeSettingsCard(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf(
-                    ThemeMode.SYSTEM to "시스템 기본값",
-                    ThemeMode.LIGHT to "라이트 모드",
-                    ThemeMode.DARK to "다크 모드"
-                ).forEach { (mode, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { themeSettingsManager.setThemeMode(mode) }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        RadioButton(
-                            selected = themeMode == mode,
-                            onClick = { themeSettingsManager.setThemeMode(mode) }
-                        )
-                        Text(
-                            text = label,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            SegmentedControl(
+                items = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK),
+                selectedItem = themeMode,
+                onItemSelect = { themeSettingsManager.setThemeMode(it) },
+                labelProvider = { mode ->
+                    when (mode) {
+                        ThemeMode.SYSTEM -> "시스템 기본"
+                        ThemeMode.LIGHT -> "라이트"
+                        ThemeMode.DARK -> "다크"
                     }
                 }
-            }
+            )
         }
     }
 }
