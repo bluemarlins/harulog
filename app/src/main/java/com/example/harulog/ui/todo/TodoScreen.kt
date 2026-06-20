@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -266,15 +267,21 @@ fun ScheduleCardItem(
     schedule: TodoScheduleEntity,
     onLongClick: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
     val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
-    val bgColor = if (schedule.category == CategoryType.WORK) WorkBackgroundColor else PersonalBackgroundColor
+    val bgColor = if (schedule.category == CategoryType.WORK) {
+        if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
+    } else {
+        if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
+    }
+    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .combinedClickable(
                 onClick = {},
                 onLongClick = onLongClick
@@ -322,15 +329,21 @@ fun TodoCardItem(
     onToggle: (TodoScheduleEntity) -> Unit,
     onLongClick: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
     val themeColor = if (todo.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
-    val bgColor = if (todo.category == CategoryType.WORK) WorkBackgroundColor else PersonalBackgroundColor
+    val bgColor = if (todo.category == CategoryType.WORK) {
+        if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
+    } else {
+        if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
+    }
+    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .combinedClickable(
                 onClick = {},
                 onLongClick = onLongClick

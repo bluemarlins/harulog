@@ -27,7 +27,10 @@ val DarkOnSurface = Color(0xFFE5E7EB)
 // Category Specific Colors
 val WorkPrimaryColor = Color(0xFF1E3A8A)       // Dark Blue / Navy
 val WorkBackgroundColor = Color(0xFFEFF6FF)    // Light Blue
+val WorkDarkBackgroundColor = Color(0xFF172554)   // Dark Blue for Dark Mode
 val PersonalPrimaryColor = Color(0xFFEC4899)   // Coral / Pink / Purple
 val PersonalBackgroundColor = Color(0xFFFDF2F8) // Light Purple / Pink
+val PersonalDarkBackgroundColor = Color(0xFF4C0519) // Dark Rose for Dark Mode
 val SuccessWorkoutColor = Color(0xFF10B981)     // Emerald Green (Success)
 val GrayBorderColor = Color(0xFFE2E8F0)
+

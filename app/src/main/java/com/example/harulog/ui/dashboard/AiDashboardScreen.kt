@@ -2,6 +2,7 @@ package com.example.harulog.ui.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -268,8 +269,14 @@ private fun UrgentTodoCard(todo: TodoScheduleEntity) {
 /** 이번 주 일정 카드 */
 @Composable
 private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
+    val isDark = isSystemInDarkTheme()
     val themeColor = if (schedule.category == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
-    val bgColor    = if (schedule.category == CategoryType.WORK) WorkBackgroundColor else PersonalBackgroundColor
+    val bgColor    = if (schedule.category == CategoryType.WORK) {
+        if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
+    } else {
+        if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
+    }
+    val borderColor = if (isDark) Color(0xFF2D3748) else GrayBorderColor
     val isToday    = schedule.eventDate == today
     val dayFormatter = DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN)
 
@@ -279,7 +286,7 @@ private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
             .shadow(1.dp, RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
             .background(bgColor)
-            .border(1.dp, GrayBorderColor, RoundedCornerShape(14.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
