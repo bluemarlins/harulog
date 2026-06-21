@@ -34,6 +34,7 @@ import com.example.harulog.ui.theme.*
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun TodoScreen(
@@ -89,7 +90,7 @@ fun DashboardPane(
             ) {
                 Column {
                     Text(
-                        "오늘의 할 일 및 일정",
+                        "일정 & 할일",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -161,7 +162,8 @@ fun DashboardPane(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
                 ) {
                     if (state.schedules.isNotEmpty()) {
                         item {
@@ -217,6 +219,7 @@ fun DashboardPane(
             onDismiss = { isAddDialogOpen = false },
             onConfirm = { title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope ->
                 onAddTodoSchedule(title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope)
+                isAddDialogOpen = false
             }
         )
     }
@@ -247,6 +250,8 @@ fun DashboardPane(
             },
             onConfirm = { title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope ->
                 onUpdateTodoSchedule(itemToEdit!!, title, content, isTodo, eventDate, startTime, endTime, category, isMonthlyScope)
+                isEditDialogOpen = false
+                itemToEdit = null
             }
         )
     }
@@ -301,18 +306,30 @@ fun ScheduleCardItem(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            if (schedule.startTime != null) {
-                val timeStr = if (schedule.endTime != null) {
+            if (!schedule.content.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    schedule.content,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            val dateStr = schedule.eventDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+            val timeStr = if (schedule.startTime != null) {
+                if (schedule.endTime != null) {
                     "${schedule.startTime} - ${schedule.endTime}"
                 } else {
                     "${schedule.startTime}"
                 }
-                Text(
-                    timeStr,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
-                )
+            } else {
+                "하루 종일"
             }
+            Text(
+                "$dateStr · $timeStr",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            )
         }
     }
 }
@@ -366,22 +383,37 @@ fun TodoCardItem(
                 textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                 color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            if (!todo.content.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    if (!todo.isMonthlyScope) "D-Day형" else "월간 범위형",
-                    fontSize = 10.sp,
-                    color = themeColor,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "| ${todo.eventDate.format(DateTimeFormatter.ofPattern(if (todo.isMonthlyScope) "yyyy-MM" else "yyyy-MM-dd"))}",
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    todo.content,
+                    fontSize = 12.sp,
+                    color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            val typeStr = if (!todo.isMonthlyScope) "D-Day" else "월간 범위"
+            val dateStr = if (todo.isMonthlyScope) {
+                todo.eventDate.format(DateTimeFormatter.ofPattern("M월 범위", Locale.KOREAN))
+            } else {
+                todo.eventDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+            }
+            val timeStr = if (todo.startTime != null) {
+                if (todo.endTime != null) {
+                    "${todo.startTime} - ${todo.endTime}"
+                } else {
+                    "${todo.startTime}"
+                }
+            } else {
+                "하루 종일"
+            }
+            Text(
+                "$dateStr · $timeStr · $typeStr",
+                fontSize = 11.sp,
+                color = themeColor,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -403,6 +435,7 @@ fun AddEditItemDialog(
     ) -> Unit
 ) {
     var title by remember { mutableStateOf(editingItem?.title ?: "") }
+    var content by remember { mutableStateOf(editingItem?.content ?: "") }
     var itemType by remember { mutableStateOf(if (editingItem?.isTodo == false) "SCHEDULE" else "TODO") }
     var category by remember { mutableStateOf(editingItem?.category ?: CategoryType.WORK) }
     var todoType by remember { mutableStateOf(if (editingItem?.isMonthlyScope == true) "MONTHLY_SCOPE" else "TARGET_DATE") }
@@ -469,6 +502,16 @@ fun AddEditItemDialog(
                     label = { Text("제목을 입력하세요") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
+                )
+
+                // Content Input
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("내용을 입력하세요 (선택 사항)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 3
                 )
 
                 // Category Selection (WORK or PERSONAL)
@@ -622,7 +665,7 @@ fun AddEditItemDialog(
                                     val isMonthly = todoType == "MONTHLY_SCOPE"
                                     onConfirm(
                                         title,
-                                        editingItem?.content,
+                                        content.takeIf { it.isNotBlank() },
                                         true,
                                         eventDate,
                                         null,
@@ -633,7 +676,7 @@ fun AddEditItemDialog(
                                 } else {
                                     onConfirm(
                                         title,
-                                        editingItem?.content,
+                                        content.takeIf { it.isNotBlank() },
                                         false,
                                         eventDate,
                                         if (isAllDay) null else startTimeState,

@@ -215,6 +215,8 @@ fun DiaryPane(
                     Text(if (state.currentDiary != null) "기록 수정" else "기록 저장")
                 }
             }
+            // 모바일 Floating Bottom Bar 영역만큼 하단 여백 추가
+            Spacer(modifier = Modifier.height(96.dp))
         }
     }
 }

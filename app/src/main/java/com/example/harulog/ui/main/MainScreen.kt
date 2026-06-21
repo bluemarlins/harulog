@@ -125,40 +125,7 @@ internal fun MainContent(
     var isCalendarExpanded by remember { mutableStateOf(true) }
 
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing,
-        bottomBar = {
-            if (!isTablet) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    NavigationBarItem(
-                        selected    = currentTab == 0,
-                        onClick     = { currentTab = 0 },
-                        icon        = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
-                        label       = { Text("캘린더") }
-                    )
-                    NavigationBarItem(
-                        selected    = currentTab == 1,
-                        onClick     = { currentTab = 1 },
-                        icon        = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
-                        label       = { Text("다이어리") }
-                    )
-                    NavigationBarItem(
-                        selected    = currentTab == 2,
-                        onClick     = { currentTab = 2 },
-                        icon        = { Icon(Icons.Outlined.Analytics, contentDescription = "Dashboard") },
-                        label       = { Text("대시보드") }
-                    )
-                    NavigationBarItem(
-                        selected    = currentTab == 3,
-                        onClick     = { currentTab = 3 },
-                        icon        = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
-                        label       = { Text("설정") }
-                    )
-                }
-            }
-        }
+        contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
         Box(
             modifier = modifier
@@ -178,18 +145,24 @@ internal fun MainContent(
                         NavigationRailItem(
                             selected = currentTab == 0,
                             onClick  = { currentTab = 0 },
-                            icon     = { Icon(Icons.Outlined.DateRange, contentDescription = "기록") },
-                            label    = { Text("기록") }
+                            icon     = { Icon(Icons.Outlined.DateRange, contentDescription = "캘린더") },
+                            label    = { Text("캘린더") }
                         )
                         NavigationRailItem(
                             selected = currentTab == 1,
                             onClick  = { currentTab = 1 },
-                            icon     = { Icon(Icons.Outlined.Analytics, contentDescription = "대시보드") },
-                            label    = { Text("대시보드") }
+                            icon     = { Icon(Icons.Outlined.Edit, contentDescription = "다이어리") },
+                            label    = { Text("다이어리") }
                         )
                         NavigationRailItem(
                             selected = currentTab == 2,
                             onClick  = { currentTab = 2 },
+                            icon     = { Icon(Icons.Outlined.Analytics, contentDescription = "대시보드") },
+                            label    = { Text("대시보드") }
+                        )
+                        NavigationRailItem(
+                            selected = currentTab == 3,
+                            onClick  = { currentTab = 3 },
                             icon     = { Icon(Icons.Outlined.Settings, contentDescription = "설정") },
                             label    = { Text("설정") }
                         )
@@ -198,7 +171,7 @@ internal fun MainContent(
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
                         when (currentTab) {
                             0 -> {
-                                // Master-Detail Split View
+                                // 캘린더 + 할일/일정 목록 가로 분할 뷰
                                 Row(
                                     modifier = Modifier.fillMaxSize(),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -213,18 +186,20 @@ internal fun MainContent(
                                             .width(1.dp)
                                             .background(GrayBorderColor)
                                     )
-                                    Column(
-                                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        DiaryScreen(
-                                            viewModel = diaryViewModel,
-                                            modifier  = Modifier.weight(0.8f)
-                                        )
-                                    }
+                                    com.example.harulog.ui.todo.TodoScreen(
+                                        viewModel = todoViewModel,
+                                        modifier  = Modifier.weight(1f).fillMaxHeight()
+                                    )
                                 }
                             }
                             1 -> {
+                                // 다이어리 화면 단독 전체 화면 노출
+                                DiaryScreen(
+                                    viewModel = diaryViewModel,
+                                    modifier  = Modifier.fillMaxSize()
+                                )
+                            }
+                            2 -> {
                                 AiDashboardScreen(
                                     todoViewModel = todoViewModel,
                                     modifier      = Modifier.fillMaxSize()
@@ -261,7 +236,7 @@ internal fun MainContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 0.dp)
                 ) {
                     when (currentTab) {
                         // 0: 캘린더 — 상단 캘린더 그리드 + 하단 할 일/일정 리스트
@@ -317,6 +292,52 @@ internal fun MainContent(
                                 )
                             }
                         }
+                    }
+                }
+
+                // 모바일용 Floating Bottom Navigation Bar Overlay
+                val isDark = MaterialTheme.colorScheme.background == DarkBackground
+                val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(24.dp))
+                        .border(1.dp, borderColor, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                    )
+                ) {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        modifier = Modifier.height(64.dp)
+                    ) {
+                        NavigationBarItem(
+                            selected    = currentTab == 0,
+                            onClick     = { currentTab = 0 },
+                            icon        = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
+                            label       = { Text("캘린더") }
+                        )
+                        NavigationBarItem(
+                            selected    = currentTab == 1,
+                            onClick     = { currentTab = 1 },
+                            icon        = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
+                            label       = { Text("다이어리") }
+                        )
+                        NavigationBarItem(
+                            selected    = currentTab == 2,
+                            onClick     = { currentTab = 2 },
+                            icon        = { Icon(Icons.Outlined.Analytics, contentDescription = "Dashboard") },
+                            label       = { Text("대시보드") }
+                        )
+                        NavigationBarItem(
+                            selected    = currentTab == 3,
+                            onClick     = { currentTab = 3 },
+                            icon        = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
+                            label       = { Text("설정") }
+                        )
                     }
                 }
             }
