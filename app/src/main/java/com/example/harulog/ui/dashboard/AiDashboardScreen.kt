@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,7 +30,9 @@ import com.example.harulog.data.local.entity.CategoryType
 import com.example.harulog.data.local.entity.TodoScheduleEntity
 import com.example.harulog.ui.theme.*
 import com.example.harulog.ui.todo.TodoViewModel
+import com.example.harulog.ui.todo.MonthlyDashboardSummary
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -44,6 +47,12 @@ fun AiDashboardScreen(
 ) {
     val state by todoViewModel.uiState.collectAsStateWithLifecycle()
     val today = LocalDate.now()
+    val currentMonth = YearMonth.from(today)
+
+    // 한달 요약 정보 수집
+    val dashboardSummary by remember(today) {
+        todoViewModel.getMonthlyDashboardSummary(currentMonth)
+    }.collectAsStateWithLifecycle(initialValue = MonthlyDashboardSummary())
 
     // 이번 달 미완료 할 일 (월간 범위형)
     val overdueMonthlyTodos = todoViewModel.getAllTodosForDashboard()
@@ -64,6 +73,7 @@ fun AiDashboardScreen(
         today               = today,
         weekStart           = weekStart,
         weekEnd             = weekEnd,
+        dashboardSummary    = dashboardSummary,
         modifier            = modifier
     )
 }
@@ -79,6 +89,7 @@ fun AiDashboardContent(
     today: LocalDate,
     weekStart: LocalDate,
     weekEnd: LocalDate,
+    dashboardSummary: MonthlyDashboardSummary,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -88,9 +99,50 @@ fun AiDashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        // ── AI 요약 배너 (플레이스홀더) ────────────────────────────────────
+        // ── 한달 요약 섹션 ──────────────────────────────────────────────
+        item {
+            DashboardSectionHeader(
+                icon = Icons.Outlined.Info,
+                title = "한달 요약 리포트",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // AI 요약 배너 (플레이스홀더)
         item {
             AiSummaryBanner()
+        }
+
+        // 장기 일정 하이라이트 카드 (최장 연속 일정 2일 이상 시 노출)
+        if (dashboardSummary.longestScheduleDuration >= 2 && dashboardSummary.longestScheduleTitle != null) {
+            item {
+                LongestScheduleHighlightCard(
+                    title = dashboardSummary.longestScheduleTitle,
+                    duration = dashboardSummary.longestScheduleDuration,
+                    periodText = dashboardSummary.longestSchedulePeriodText ?: ""
+                )
+            }
+        }
+
+        // 운동 & 연차 요약 카드 (가로 2열 배치)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    WorkoutMotivationCard(
+                        count = dashboardSummary.totalWorkoutCount,
+                        message = dashboardSummary.workoutMotivationMessage
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    AnnualLeaveListCard(
+                        count = dashboardSummary.annualLeaveCount,
+                        dates = dashboardSummary.annualLeaveDates
+                    )
+                }
+            }
         }
 
         // ── 이번 달 미완료 할 일 경고 ─────────────────────────────────────
@@ -133,10 +185,7 @@ fun AiDashboardContent(
             }
         }
 
-        // ── AI 기능 예정 안내 카드 ─────────────────────────────────────────
-        item {
-            AiComingSoonCard()
-        }
+
     }
 }
 
@@ -359,38 +408,221 @@ private fun EmptyStateCard(message: String) {
     }
 }
 
-/** AI 기능 예정 안내 카드 */
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 추가된 한달 요약 리포트 카드 컴포넌트
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun AiComingSoonCard() {
+private fun WorkoutMotivationCard(count: Int, message: String) {
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    
+    val bgColor = if (isDark) Color(0xFF1B2E24) else Color(0xFFE8F5E9)
+    val borderColor = if (isDark) Color(0xFF2E4D3E) else Color(0xFFC8E6C9)
+    val tintColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                Icons.Outlined.Star,
+                contentDescription = null,
+                tint = tintColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                "운동",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor
+            )
+        }
+        
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    "$count",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = tintColor
+                )
+                Text(
+                    " 회 완료",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = onSurfaceColor.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+            Text(
+                message,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+                color = onSurfaceColor.copy(alpha = 0.7f),
+                maxLines = 3
+            )
+        }
+    }
+}
+
+@Composable
+private fun AnnualLeaveListCard(count: Int, dates: List<LocalDate>) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    
+    val bgColor = if (isDark) Color(0xFF1E2838) else Color(0xFFE3F2FD)
+    val borderColor = if (isDark) Color(0xFF2C3E56) else Color(0xFFBBDEFB)
+    val tintColor = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
+    val datesText = if (dates.isEmpty()) {
+        "사용 내역이 없습니다."
+    } else {
+        dates.joinToString(", ") { "${it.monthValue}/${it.dayOfMonth}" }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                Icons.Outlined.Info,
+                contentDescription = null,
+                tint = tintColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                "연차 사용",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor
+            )
+        }
+        
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    "$count",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = tintColor
+                )
+                Text(
+                    " 회 사용",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = onSurfaceColor.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+            Text(
+                datesText,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+                color = onSurfaceColor.copy(alpha = 0.7f),
+                maxLines = 3
+            )
+        }
+    }
+}
+
+@Composable
+private fun LongestScheduleHighlightCard(
+    title: String,
+    duration: Int,
+    periodText: String
+) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    
+    val bgColor = if (isDark) Color(0xFF2D1F3D) else Color(0xFFF3E5F5)
+    val borderColor = if (isDark) Color(0xFF4C3069) else Color(0xFFE1BEE7)
+    val tintColor = if (isDark) Color(0xFFBA68C8) else Color(0xFF8E24AA)
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(16.dp))
+            .shadow(2.dp, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(18.dp))
+            .background(bgColor)
+            .border(1.5.dp, borderColor, RoundedCornerShape(18.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Icon(
-            Icons.Outlined.Info,
-            contentDescription = null,
-            tint     = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Column {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(tintColor.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Outlined.Star,
+                contentDescription = null,
+                tint = tintColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    "가장 긴 일정 하이라이트",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = tintColor
+                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = tintColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        "${duration}일 연속",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = tintColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
             Text(
-                "AI 기능 준비 중",
-                fontWeight = FontWeight.Bold,
-                fontSize   = 14.sp,
-                color      = MaterialTheme.colorScheme.onSurface
+                title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = onSurfaceColor
             )
             Text(
-                "향후 업데이트에서 주간·월간 AI 요약 및\n맞춤형 우선순위 추천 기능이 제공될 예정입니다.",
-                fontSize   = 12.sp,
-                color      = MaterialTheme.colorScheme.secondary,
-                lineHeight = 18.sp
+                "$periodText ($duration 일간)",
+                fontSize = 12.sp,
+                color = onSurfaceColor.copy(alpha = 0.8f)
             )
         }
     }

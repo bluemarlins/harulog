@@ -225,6 +225,55 @@ class UserScenarioTest {
         assertEquals("가족 행사", repoSchedules[0].title)
         assertEquals(CategoryType.PERSONAL, repoSchedules[0].category)
     }
+
+    @Test
+    fun scenario6_monthlyDashboardSummary() = runTest {
+        val collectJobTodo = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            todoViewModel.uiState.collect {}
+        }
+
+        val targetMonth = java.time.YearMonth.of(2026, 6)
+
+        // 1. 운동 스티커 등록 (Exercised 완료 2개, 미완료 1개)
+        fakeRepository.insertExerciseSticker(ExerciseStickerEntity(date = LocalDate.of(2026, 6, 15), isExercised = true))
+        fakeRepository.insertExerciseSticker(ExerciseStickerEntity(date = LocalDate.of(2026, 6, 17), isExercised = false))
+        fakeRepository.insertExerciseSticker(ExerciseStickerEntity(date = LocalDate.of(2026, 6, 19), isExercised = true))
+
+        // 2. 연차 등록 (3회 등록)
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 101, title = "연차", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 15), startTime = null, endTime = null, category = CategoryType.WORK))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 102, title = "연차", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 17), startTime = null, endTime = null, category = CategoryType.WORK))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 103, title = "연차", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 20), startTime = null, endTime = null, category = CategoryType.WORK))
+
+        // 3. 장기 일정 등록
+        // 6/12 ~ 6/15 크로아티아 여행 (연속 4일)
+        // 6/1 ~ 6/2 워크숍 (연속 2일)
+        // 6/25 회의 (연속 아님)
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 201, title = "크로아티아 여행", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 12), startTime = null, endTime = null, category = CategoryType.PERSONAL))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 202, title = "크로아티아 여행", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 13), startTime = null, endTime = null, category = CategoryType.PERSONAL))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 203, title = "크로아티아 여행", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 14), startTime = null, endTime = null, category = CategoryType.PERSONAL))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 204, title = "크로아티아 여행", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 15), startTime = null, endTime = null, category = CategoryType.PERSONAL))
+
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 205, title = "워크숍", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 1), startTime = null, endTime = null, category = CategoryType.WORK))
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 206, title = "워크숍", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 2), startTime = null, endTime = null, category = CategoryType.WORK))
+
+        fakeRepository.insertTodoSchedule(TodoScheduleEntity(id = 207, title = "회의", content = null, isTodo = false, eventDate = LocalDate.of(2026, 6, 25), startTime = null, endTime = null, category = CategoryType.WORK))
+
+        testScheduler.advanceUntilIdle()
+
+        // 4. 요약 데이터 조회 및 검증
+        val summary = todoViewModel.getMonthlyDashboardSummary(targetMonth).first()
+
+        assertEquals(2, summary.totalWorkoutCount)
+        assertTrue(summary.workoutMotivationMessage.isNotEmpty())
+
+        assertEquals(3, summary.annualLeaveCount)
+        assertEquals(3, summary.annualLeaveDates.size)
+        assertTrue(summary.annualLeaveDates.contains(LocalDate.of(2026, 6, 15)))
+
+        assertEquals("크로아티아 여행", summary.longestScheduleTitle)
+        assertEquals(4, summary.longestScheduleDuration)
+        assertEquals("6/12 ~ 6/15", summary.longestSchedulePeriodText)
+    }
 }
 
 private class UserScenarioFakeDataRepository : DataRepository {
