@@ -537,33 +537,14 @@ fun AddEditItemDialog(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Item Type Tab (Todo vs Schedule)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                        .padding(2.dp)
-                ) {
-                    listOf("TODO" to "할 일", "SCHEDULE" to "일정").forEach { (type, label) ->
-                        val isSel = itemType == type
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (isSel) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                .clickable { itemType = type }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                label,
-                                color = if (isSel) Color.White else MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-                }
+                // 구분 (할 일 / 일정)
+                Text("구분", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                SegmentedControl(
+                    items = listOf("TODO", "SCHEDULE"),
+                    selectedItem = itemType,
+                    onItemSelect = { itemType = it },
+                    labelProvider = { if (it == "TODO") "할 일" else "일정" }
+                )
 
                 // Title Input
                 OutlinedTextField(
@@ -585,50 +566,26 @@ fun AddEditItemDialog(
                 )
 
                 // Category Selection (WORK or PERSONAL)
-                Text("카테고리 선택", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(CategoryType.WORK to "업무", CategoryType.PERSONAL to "개인").forEach { (cat, label) ->
-                        val isSel = category == cat
-                        val color = if (cat == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
-                        Button(
-                            onClick = { category = cat },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSel) color else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(label, fontSize = 12.sp)
-                        }
-                    }
-                }
+                Text("분류", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                SegmentedControl(
+                    items = listOf(CategoryType.WORK, CategoryType.PERSONAL),
+                    selectedItem = category,
+                    onItemSelect = { category = it },
+                    activeColorProvider = { cat ->
+                        if (cat == CategoryType.WORK) WorkPrimaryColor else PersonalPrimaryColor
+                    },
+                    labelProvider = { if (it == CategoryType.WORK) "업무" else "개인" }
+                )
 
                 // Conditional Inputs based on itemType
                 if (itemType == "TODO") {
-                    Text("할 일 범위 설정", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf("TARGET_DATE" to "D-Day형", "MONTHLY_SCOPE" to "월간 범위형").forEach { (type, label) ->
-                            val isSel = todoType == type
-                            Button(
-                                onClick = { todoType = type },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(label, fontSize = 12.sp)
-                            }
-                        }
-                    }
+                    Text("기한 유형", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    SegmentedControl(
+                        items = listOf("TARGET_DATE", "MONTHLY_SCOPE"),
+                        selectedItem = todoType,
+                        onItemSelect = { todoType = it },
+                        labelProvider = { if (it == "TARGET_DATE") "D-Day" else "월간 범위" }
+                    )
                 } else {
                     // ── 일정 시간 선택 UI ────────────────────────────────
                     // 하루 종일 스위치
