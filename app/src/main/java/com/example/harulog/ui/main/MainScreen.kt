@@ -316,29 +316,41 @@ internal fun MainContent(
                         containerColor = Color.Transparent,
                         modifier = Modifier.height(64.dp)
                     ) {
+                        val navBarColors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+
                         NavigationBarItem(
                             selected    = currentTab == 0,
                             onClick     = { currentTab = 0 },
                             icon        = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
-                            label       = { Text("캘린더") }
+                            label       = { Text("캘린더", modifier = Modifier.background(Color.Transparent)) },
+                            colors      = navBarColors
                         )
                         NavigationBarItem(
                             selected    = currentTab == 1,
                             onClick     = { currentTab = 1 },
                             icon        = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
-                            label       = { Text("다이어리") }
+                            label       = { Text("다이어리", modifier = Modifier.background(Color.Transparent)) },
+                            colors      = navBarColors
                         )
                         NavigationBarItem(
                             selected    = currentTab == 2,
                             onClick     = { currentTab = 2 },
                             icon        = { Icon(Icons.Outlined.Analytics, contentDescription = "Dashboard") },
-                            label       = { Text("대시보드") }
+                            label       = { Text("대시보드", modifier = Modifier.background(Color.Transparent)) },
+                            colors      = navBarColors
                         )
                         NavigationBarItem(
                             selected    = currentTab == 3,
                             onClick     = { currentTab = 3 },
                             icon        = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
-                            label       = { Text("설정") }
+                            label       = { Text("설정", modifier = Modifier.background(Color.Transparent)) },
+                            colors      = navBarColors
                         )
                     }
                 }
