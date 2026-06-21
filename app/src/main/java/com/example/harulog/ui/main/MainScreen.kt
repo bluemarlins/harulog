@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -312,46 +313,61 @@ internal fun MainContent(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
                     )
                 ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        modifier = Modifier.height(64.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val navBarColors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-
-                        NavigationBarItem(
-                            selected    = currentTab == 0,
-                            onClick     = { currentTab = 0 },
-                            icon        = { Icon(Icons.Outlined.DateRange, contentDescription = "Calendar") },
-                            label       = { Text("캘린더", modifier = Modifier.background(Color.Transparent)) },
-                            colors      = navBarColors
-                        )
-                        NavigationBarItem(
-                            selected    = currentTab == 1,
-                            onClick     = { currentTab = 1 },
-                            icon        = { Icon(Icons.Outlined.Edit, contentDescription = "Diary") },
-                            label       = { Text("다이어리", modifier = Modifier.background(Color.Transparent)) },
-                            colors      = navBarColors
-                        )
-                        NavigationBarItem(
-                            selected    = currentTab == 2,
-                            onClick     = { currentTab = 2 },
-                            icon        = { Icon(Icons.Outlined.Analytics, contentDescription = "Dashboard") },
-                            label       = { Text("대시보드", modifier = Modifier.background(Color.Transparent)) },
-                            colors      = navBarColors
-                        )
-                        NavigationBarItem(
-                            selected    = currentTab == 3,
-                            onClick     = { currentTab = 3 },
-                            icon        = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
-                            label       = { Text("설정", modifier = Modifier.background(Color.Transparent)) },
-                            colors      = navBarColors
-                        )
+                        listOf(
+                            Triple(0, Icons.Outlined.DateRange, "캘린더"),
+                            Triple(1, Icons.Outlined.Edit, "다이어리"),
+                            Triple(2, Icons.Outlined.Analytics, "대시보드"),
+                            Triple(3, Icons.Outlined.Settings, "설정")
+                        ).forEach { (tabIndex, icon, label) ->
+                            val isSelected = currentTab == tabIndex
+                            val tintColor = if (isSelected) MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { currentTab = tabIndex },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .height(32.dp)
+                                        .width(64.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                            else Color.Transparent
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = label,
+                                        tint = tintColor
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = label,
+                                    color = tintColor,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             }
