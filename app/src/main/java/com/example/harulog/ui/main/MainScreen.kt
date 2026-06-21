@@ -122,6 +122,7 @@ internal fun MainContent(
 
     // 탭 순서: 0=캘린더, 1=다이어리, 2=대시보드, 3=설정
     var currentTab by remember { mutableStateOf(0) }
+    var isCalendarExpanded by remember { mutableStateOf(true) }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -271,7 +272,9 @@ internal fun MainContent(
                             ) {
                                 CalendarScreen(
                                     viewModel = calendarViewModel,
-                                    modifier  = Modifier.weight(1.2f)
+                                    isExpanded = isCalendarExpanded,
+                                    onToggleExpand = { isCalendarExpanded = !isCalendarExpanded },
+                                    modifier  = if (isCalendarExpanded) Modifier.weight(1.2f) else Modifier.wrapContentHeight()
                                 )
                                 com.example.harulog.ui.todo.TodoScreen(
                                     viewModel = todoViewModel,

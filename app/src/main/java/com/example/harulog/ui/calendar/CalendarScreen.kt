@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,11 +41,15 @@ enum class RangePosition { NONE, SINGLE, START, MIDDLE, END }
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
+    isExpanded: Boolean = true,
+    onToggleExpand: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     CalendarPane(
         state = state,
+        isExpanded = isExpanded,
+        onToggleExpand = onToggleExpand,
         onSelectDate = viewModel::selectDate,
         onSelectMonth = viewModel::selectMonth,
         onSetViewMode = viewModel::setViewMode,
@@ -55,6 +61,8 @@ fun CalendarScreen(
 @Composable
 fun CalendarPane(
     state: CalendarUiState,
+    isExpanded: Boolean = true,
+    onToggleExpand: () -> Unit = {},
     onSelectDate: (LocalDate) -> Unit,
     onSelectMonth: (YearMonth) -> Unit,
     onSetViewMode: (CalendarViewMode) -> Unit,
@@ -68,94 +76,112 @@ fun CalendarPane(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
+            modifier = if (isExpanded) Modifier.fillMaxSize().padding(12.dp)
+                       else Modifier.wrapContentHeight().padding(12.dp)
         ) {
-            // View Mode Selector
-            SegmentedControl(
-                items = listOf(CalendarViewMode.DAY, CalendarViewMode.WEEK, CalendarViewMode.MONTH),
-                selectedItem = state.viewMode,
-                onItemSelect = onSetViewMode,
-                labelProvider = { mode ->
-                    when (mode) {
-                        CalendarViewMode.DAY -> "일간"
-                        CalendarViewMode.WEEK -> "주간"
-                        CalendarViewMode.MONTH -> "월간"
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Calendar Navigation
+            // View Mode Selector + Expand/Collapse Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val formattedHeader = when (state.viewMode) {
-                    CalendarViewMode.MONTH -> state.currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
-                    CalendarViewMode.WEEK  -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
-                    CalendarViewMode.DAY   -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E)", Locale.KOREAN))
-                }
-
-                IconButton(
-                    onClick = {
-                        when (state.viewMode) {
-                            CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.minusMonths(1))
-                            CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.minusWeeks(1))
-                            CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.minusDays(1))
+                SegmentedControl(
+                    items = listOf(CalendarViewMode.DAY, CalendarViewMode.WEEK, CalendarViewMode.MONTH),
+                    selectedItem = state.viewMode,
+                    onItemSelect = onSetViewMode,
+                    modifier = Modifier.weight(1f),
+                    labelProvider = { mode ->
+                        when (mode) {
+                            CalendarViewMode.DAY -> "일간"
+                            CalendarViewMode.WEEK -> "주간"
+                            CalendarViewMode.MONTH -> "월간"
                         }
                     }
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Prev")
-                }
-
-                Text(
-                    formattedHeader,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
                 )
-
+                Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
-                    onClick = {
-                        when (state.viewMode) {
-                            CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.plusMonths(1))
-                            CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.plusWeeks(1))
-                            CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.plusDays(1))
-                        }
-                    }
+                    onClick = onToggleExpand,
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Grid Headers (Days of week)
-            Row(modifier = Modifier.fillMaxWidth()) {
-                val days = listOf("일", "월", "화", "수", "목", "금", "토")
-                days.forEach {
-                    Text(
-                        text = it,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (it == "일") Color.Red else MaterialTheme.colorScheme.secondary
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(4.dp))
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                MonthCalendarView(state, onSelectDate, onToggleWorkout)
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Calendar Navigation
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val formattedHeader = when (state.viewMode) {
+                        CalendarViewMode.MONTH -> state.currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
+                        CalendarViewMode.WEEK  -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN))
+                        CalendarViewMode.DAY   -> state.selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E)", Locale.KOREAN))
+                    }
+
+                    IconButton(
+                        onClick = {
+                            when (state.viewMode) {
+                                CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.minusMonths(1))
+                                CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.minusWeeks(1))
+                                CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.minusDays(1))
+                            }
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Prev")
+                    }
+
+                    Text(
+                        formattedHeader,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    IconButton(
+                        onClick = {
+                            when (state.viewMode) {
+                                CalendarViewMode.MONTH -> onSelectMonth(state.currentMonth.plusMonths(1))
+                                CalendarViewMode.WEEK  -> onSelectDate(state.selectedDate.plusWeeks(1))
+                                CalendarViewMode.DAY   -> onSelectDate(state.selectedDate.plusDays(1))
+                            }
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Grid Headers (Days of week)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    val days = listOf("일", "월", "화", "수", "목", "금", "토")
+                    days.forEach {
+                        Text(
+                            text = it,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (it == "일") Color.Red else MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    MonthCalendarView(state, onSelectDate, onToggleWorkout)
+                }
             }
         }
     }
