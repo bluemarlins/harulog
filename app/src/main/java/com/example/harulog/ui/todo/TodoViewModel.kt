@@ -527,7 +527,7 @@ class TodoViewModel @Inject constructor(
         repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(10), isExercised = true))
     }
 
-    private fun mergeConsecutiveItems(items: List<TodoScheduleEntity>, viewMode: CalendarViewMode): List<MergedTodoScheduleItem> {
+    fun mergeConsecutiveItems(items: List<TodoScheduleEntity>, viewMode: CalendarViewMode): List<MergedTodoScheduleItem> {
         if (viewMode == CalendarViewMode.DAY) {
             return items.map { it.toMergedItem() }
         }

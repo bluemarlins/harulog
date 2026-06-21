@@ -31,6 +31,7 @@ import com.example.harulog.data.local.entity.TodoScheduleEntity
 import com.example.harulog.ui.theme.*
 import com.example.harulog.ui.todo.TodoViewModel
 import com.example.harulog.ui.todo.MonthlyDashboardSummary
+import com.example.harulog.ui.todo.MergedTodoScheduleItem
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -54,18 +55,24 @@ fun AiDashboardScreen(
         todoViewModel.getMonthlyDashboardSummary(currentMonth)
     }.collectAsStateWithLifecycle(initialValue = MonthlyDashboardSummary())
 
-    // 이번 달 미완료 할 일 (월간 범위형)
-    val overdueMonthlyTodos = todoViewModel.getAllTodosForDashboard()
+    // 이번 달 미완료 할 일 (월간 범위형) - 병합 적용
+    val rawOverdueMonthlyTodos = todoViewModel.getAllTodosForDashboard()
         .filter { it.isTodo && it.isMonthlyScope && !it.isCompleted &&
                 it.eventDate.year == today.year && it.eventDate.month == today.month }
+    val overdueMonthlyTodos = remember(rawOverdueMonthlyTodos) {
+        todoViewModel.mergeConsecutiveItems(rawOverdueMonthlyTodos, com.example.harulog.ui.calendar.CalendarViewMode.MONTH)
+    }
 
-    // 이번 주 일정 (일요일~토요일)
+    // 이번 주 일정 (일요일~토요일) - 병합 적용
     val dow = today.dayOfWeek.value % 7
     val weekStart = today.minusDays(dow.toLong())
     val weekEnd   = weekStart.plusDays(6)
-    val weekSchedules = todoViewModel.getAllTodosForDashboard()
+    val rawWeekSchedules = todoViewModel.getAllTodosForDashboard()
         .filter { !it.isTodo && it.eventDate >= weekStart && it.eventDate <= weekEnd }
         .sortedBy { it.eventDate }
+    val weekSchedules = remember(rawWeekSchedules) {
+        todoViewModel.mergeConsecutiveItems(rawWeekSchedules, com.example.harulog.ui.calendar.CalendarViewMode.WEEK)
+    }
 
     AiDashboardContent(
         overdueMonthlyTodos = overdueMonthlyTodos,
@@ -84,8 +91,8 @@ fun AiDashboardScreen(
 
 @Composable
 fun AiDashboardContent(
-    overdueMonthlyTodos: List<TodoScheduleEntity>,
-    weekSchedules: List<TodoScheduleEntity>,
+    overdueMonthlyTodos: List<MergedTodoScheduleItem>,
+    weekSchedules: List<MergedTodoScheduleItem>,
     today: LocalDate,
     weekStart: LocalDate,
     weekEnd: LocalDate,
@@ -270,58 +277,99 @@ private fun DashboardSectionHeader(
 
 /** 미완료 월간 할 일 — 경고 강조 카드 */
 @Composable
-private fun UrgentTodoCard(todo: TodoScheduleEntity) {
+private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val themeColor = if (todo.category == CategoryType.WORK) {
         if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
     } else {
         if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
     }
+    val bgColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.30f)
+    val borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.30f))
-            .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    val isMerged = todo.originalItems.size > 1
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // 카테고리 컬러 바
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(32.dp)
-                .background(themeColor, RoundedCornerShape(2.dp))
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                todo.title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize   = 14.sp,
-                color      = MaterialTheme.colorScheme.onSurface,
-                textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-            )
-            Text(
-                "${if (todo.category == CategoryType.WORK) "업무" else "개인"} · 월간 범위형",
-                fontSize = 11.sp,
-                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+        if (isMerged) {
+            if (todo.originalItems.size > 2) {
+                // Bottom stacked card background
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                )
+            }
+            // Middle stacked card background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = 4.dp, start = 4.dp, end = 4.dp)
+                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
             )
         }
-        Icon(
-            Icons.Outlined.Warning,
-            contentDescription = null,
-            tint   = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(18.dp)
-        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (isMerged) 8.dp else 0.dp)
+                .shadow(2.dp, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(bgColor)
+                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // 카테고리 컬러 바
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(32.dp)
+                    .background(themeColor, RoundedCornerShape(2.dp))
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    todo.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 14.sp,
+                    color      = MaterialTheme.colorScheme.onSurface,
+                    textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                )
+                
+                val dateStr = if (todo.isMonthlyScope) {
+                    todo.startDate.format(DateTimeFormatter.ofPattern("M월 범위", Locale.KOREAN))
+                } else if (isMerged) {
+                    val startStr = todo.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    val endStr = todo.endDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    "$startStr ~ $endStr"
+                } else {
+                    todo.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                }
+
+                Text(
+                    "$dateStr · ${if (todo.category == CategoryType.WORK) "업무" else "개인"} · 월간 범위형",
+                    fontSize = 11.sp,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                )
+            }
+            Icon(
+                Icons.Outlined.Warning,
+                contentDescription = null,
+                tint   = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
 /** 이번 주 일정 카드 */
 @Composable
-private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
+private fun WeekScheduleCard(schedule: MergedTodoScheduleItem, today: LocalDate) {
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val themeColor = if (schedule.category == CategoryType.WORK) {
         if (isDark) WorkDarkPrimaryColor else WorkPrimaryColor
@@ -334,59 +382,102 @@ private fun WeekScheduleCard(schedule: TodoScheduleEntity, today: LocalDate) {
         if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
     }
     val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
-    val isToday    = schedule.eventDate == today
+    val isToday    = !schedule.isMonthlyScope && schedule.startDate == today
     val dayFormatter = DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(1.dp, RoundedCornerShape(14.dp))
-            .clip(RoundedCornerShape(14.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    val isMerged = schedule.originalItems.size > 1
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(28.dp)
-                .background(themeColor, RoundedCornerShape(2.dp))
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                schedule.title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize   = 14.sp,
-                color      = MaterialTheme.colorScheme.onSurface
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    schedule.eventDate.format(dayFormatter),
-                    fontSize = 11.sp,
-                    color    = if (isToday) themeColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+        if (isMerged) {
+            if (schedule.originalItems.size > 2) {
+                // Bottom stacked card background
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                 )
-                if (schedule.startTime != null) {
+            }
+            // Middle stacked card background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = 4.dp, start = 4.dp, end = 4.dp)
+                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (isMerged) 8.dp else 0.dp)
+                .shadow(1.dp, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .background(bgColor)
+                .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(28.dp)
+                    .background(themeColor, RoundedCornerShape(2.dp))
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    schedule.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 14.sp,
+                    color      = MaterialTheme.colorScheme.onSurface
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val dateStr = if (isMerged) {
+                        val startStr = schedule.startDate.format(dayFormatter)
+                        val endStr = schedule.endDate.format(dayFormatter)
+                        "$startStr ~ $endStr"
+                    } else {
+                        schedule.startDate.format(dayFormatter)
+                    }
+
+                    Text(
+                        dateStr,
+                        fontSize = 11.sp,
+                        color    = if (isToday) themeColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                    )
+                    
+                    val timeStr = if (schedule.startTime != null) {
+                        schedule.startTime.toString()
+                    } else {
+                        "하루 종일"
+                    }
                     Text("·", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
-                    Text(schedule.startTime.toString(), fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
+                    Text(
+                        timeStr,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    )
                 }
             }
-        }
-        if (isToday) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = themeColor.copy(alpha = 0.15f)
-            ) {
-                Text(
-                    "오늘",
-                    fontSize   = 10.sp,
-                    color      = themeColor,
-                    fontWeight = FontWeight.Bold,
-                    modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                )
+            if (isToday) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = themeColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        "오늘",
+                        fontSize   = 10.sp,
+                        color      = themeColor,
+                        fontWeight = FontWeight.Bold,
+                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
             }
         }
     }
