@@ -222,6 +222,7 @@ internal fun MainContent(
                                         modifier   = Modifier.padding(bottom = 8.dp)
                                     )
                                     ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
+                                    DebugDataSettingsCard(todoViewModel = todoViewModel)
                                     BackupRestoreCard(
                                         onExportBackup = onExportBackup,
                                         onImportBackup = onImportBackup
@@ -286,6 +287,7 @@ internal fun MainContent(
                                     modifier   = Modifier.padding(bottom = 8.dp)
                                 )
                                 ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
+                                DebugDataSettingsCard(todoViewModel = todoViewModel)
                                 BackupRestoreCard(
                                     onExportBackup = onExportBackup,
                                     onImportBackup = onImportBackup
@@ -400,6 +402,71 @@ private fun ThemeSettingsCard(
                     }
                 }
             )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DebugDataSettingsCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun DebugDataSettingsCard(
+    todoViewModel: TodoViewModel,
+    modifier: Modifier = Modifier
+) {
+    val isDebugEnabled by todoViewModel.isDebugDataEnabled.collectAsStateWithLifecycle()
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(14.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Column {
+                        Text(
+                            text = "디버그 더미 데이터 활성화",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "활성화 시 테스트용 더미 일정 및 할 일이 생성됩니다.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+                Switch(
+                    checked = isDebugEnabled,
+                    onCheckedChange = { todoViewModel.setDebugDataEnabled(it) }
+                )
+            }
         }
     }
 }

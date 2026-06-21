@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.harulog.data.local.entity.CategoryType
 import com.example.harulog.data.local.entity.TodoScheduleEntity
+import com.example.harulog.data.local.entity.DiaryEntity
+import com.example.harulog.data.local.entity.ExerciseStickerEntity
 import com.example.harulog.data.repository.DataRepository
 import com.example.harulog.data.repository.DataBackupDto
 import com.example.harulog.utils.SelectedDateManager
@@ -16,6 +18,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import android.content.Context
 
 data class TodoUiState(
     val selectedDate: LocalDate = LocalDate.now(),
@@ -38,8 +41,13 @@ data class MonthlyDashboardSummary(
 @HiltViewModel
 class TodoViewModel @Inject constructor(
     private val repository: DataRepository,
-    private val selectedDateManager: SelectedDateManager
+    private val selectedDateManager: SelectedDateManager,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context? = null
 ) : ViewModel() {
+
+    private val prefs = context?.getSharedPreferences("debug_prefs", Context.MODE_PRIVATE)
+    private val _isDebugDataEnabled = MutableStateFlow(prefs?.getBoolean("debug_data_enabled", false) ?: false)
+    val isDebugDataEnabled: StateFlow<Boolean> = _isDebugDataEnabled.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow<CategoryType?>(null)
     val selectedCategory: StateFlow<CategoryType?> = _selectedCategory.asStateFlow()
@@ -332,5 +340,166 @@ class TodoViewModel @Inject constructor(
                 longestScheduleDuration = maxDuration
             )
         }
+    }
+
+    fun setDebugDataEnabled(enabled: Boolean) {
+        prefs?.edit()?.putBoolean("debug_data_enabled", enabled)?.apply()
+        _isDebugDataEnabled.value = enabled
+        viewModelScope.launch {
+            if (enabled) {
+                repository.deleteAllTodoSchedules()
+                repository.deleteAllDiaries()
+                repository.deleteAllExerciseStickers()
+                insertDummyData()
+            } else {
+                repository.deleteAllTodoSchedules()
+                repository.deleteAllDiaries()
+                repository.deleteAllExerciseStickers()
+            }
+        }
+    }
+
+    private suspend fun insertDummyData() {
+        val today = LocalDate.now()
+        for (i in -5..4) {
+            repository.insertTodoSchedule(
+                TodoScheduleEntity(
+                    title = "크로아티아 여행",
+                    content = "가족들과 함께하는 유럽 여행",
+                    isTodo = false,
+                    eventDate = today.plusDays(i.toLong()),
+                    startTime = null,
+                    endTime = null,
+                    category = CategoryType.PERSONAL
+                )
+            )
+        }
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "연차",
+                content = "개인 휴가 및 휴식",
+                isTodo = false,
+                eventDate = today.minusDays(2),
+                startTime = null,
+                endTime = null,
+                category = CategoryType.WORK
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "연차",
+                content = "개인 휴가 및 휴식",
+                isTodo = false,
+                eventDate = today.minusDays(1),
+                startTime = null,
+                endTime = null,
+                category = CategoryType.WORK
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "주간 전략 회의",
+                content = "상반기 실적 공유 및 하반기 계획 수립 회의",
+                isTodo = false,
+                eventDate = today,
+                startTime = LocalTime.of(10, 0),
+                endTime = LocalTime.of(11, 30),
+                category = CategoryType.WORK
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "퇴근 후 저녁 약속",
+                content = "친구와 맛집 방문 및 수다",
+                isTodo = false,
+                eventDate = today,
+                startTime = LocalTime.of(19, 0),
+                endTime = LocalTime.of(21, 0),
+                category = CategoryType.PERSONAL
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "가족 식사 모임",
+                content = "부모님 결혼기념일 축하 저녁 식사",
+                isTodo = false,
+                eventDate = today.plusDays(3),
+                startTime = LocalTime.of(18, 0),
+                endTime = LocalTime.of(20, 0),
+                category = CategoryType.PERSONAL
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "아침 조깅 5km",
+                content = "상쾌한 아침 공기 마시며 달리기",
+                isTodo = true,
+                eventDate = today,
+                startTime = null,
+                endTime = null,
+                category = CategoryType.PERSONAL,
+                isCompleted = true
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "프로젝트 기획안 작성 완료",
+                content = "기획 요약서 및 아키텍처 다이어그램 정리",
+                isTodo = true,
+                eventDate = today,
+                startTime = null,
+                endTime = null,
+                category = CategoryType.WORK,
+                isCompleted = false
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "매일 물 2L 마시기",
+                content = "건강 관리 프로젝트 첫 번째 실천 항목",
+                isTodo = true,
+                eventDate = today,
+                startTime = null,
+                endTime = null,
+                category = CategoryType.PERSONAL,
+                isCompleted = false,
+                isMonthlyScope = true
+            )
+        )
+        repository.insertTodoSchedule(
+            TodoScheduleEntity(
+                title = "마트 장보기",
+                content = "우유, 계란, 바나나, 닭가슴살 구매",
+                isTodo = true,
+                eventDate = today.plusDays(1),
+                startTime = null,
+                endTime = null,
+                category = CategoryType.PERSONAL,
+                isCompleted = false
+            )
+        )
+        repository.insertDiary(
+            DiaryEntity(
+                date = today.minusDays(2),
+                content = "드디어 기다리던 연차 휴가 첫날! 집에서 하루 종일 밀린 잠을 자고 넷플릭스를 정주행했다. 아무것도 하지 않는 자유가 이렇게 행복할 줄이야."
+            )
+        )
+        repository.insertDiary(
+            DiaryEntity(
+                date = today.minusDays(1),
+                content = "연차 둘째 날. 맛있는 브런치를 해 먹고 가벼운 산책을 다녀왔다. 마음속의 스트레스가 다 날아가는 듯한 기분이다. 내일 출근도 화이팅하자."
+            )
+        )
+        repository.insertDiary(
+            DiaryEntity(
+                date = today,
+                content = "오늘은 주간 전략 회의가 길어져 조금 지쳤지만, 퇴근 후에 친구와 맛있는 저녁을 먹고 스트레스를 풀 수 있어서 좋았다. 하루로그에 기록을 남기며 하루를 마무리한다."
+            )
+        )
+        repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(1), isExercised = true))
+        repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(3), isExercised = true))
+        repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(6), isExercised = true))
+        repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(8), isExercised = true))
+        repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(10), isExercised = true))
     }
 }
