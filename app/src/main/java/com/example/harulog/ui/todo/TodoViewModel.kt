@@ -20,11 +20,26 @@ import java.util.Locale
 import javax.inject.Inject
 import android.content.Context
 
+data class MergedTodoScheduleItem(
+    val id: Long,
+    val title: String,
+    val content: String?,
+    val isTodo: Boolean,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val startTime: LocalTime?,
+    val endTime: LocalTime?,
+    val category: CategoryType,
+    val isCompleted: Boolean,
+    val isMonthlyScope: Boolean,
+    val originalItems: List<TodoScheduleEntity>
+)
+
 data class TodoUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val selectedCategory: CategoryType? = null,
-    val schedules: List<TodoScheduleEntity> = emptyList(),
-    val todos: List<TodoScheduleEntity> = emptyList(),
+    val schedules: List<MergedTodoScheduleItem> = emptyList(),
+    val todos: List<MergedTodoScheduleItem> = emptyList(),
     val dateRangeText: String = ""
 )
 
@@ -73,13 +88,13 @@ class TodoViewModel @Inject constructor(
             allItems.filter { it.category == category }
         }
 
-        val schedules: List<TodoScheduleEntity>
-        val todos: List<TodoScheduleEntity>
+        val rawSchedules: List<TodoScheduleEntity>
+        val rawTodos: List<TodoScheduleEntity>
 
         when (viewMode) {
             CalendarViewMode.DAY -> {
-                schedules = filteredItems.filter { !it.isTodo && it.eventDate == selectedDate }
-                todos = filteredItems.filter {
+                rawSchedules = filteredItems.filter { !it.isTodo && it.eventDate == selectedDate }
+                rawTodos = filteredItems.filter {
                     it.isTodo && (
                         (!it.isMonthlyScope && it.eventDate == selectedDate) ||
                         (it.isMonthlyScope && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month)
@@ -91,10 +106,10 @@ class TodoViewModel @Inject constructor(
                 val startOfWeek = selectedDate.minusDays(dayOfWeek.toLong())
                 val endOfWeek = startOfWeek.plusDays(6)
 
-                schedules = filteredItems.filter {
+                rawSchedules = filteredItems.filter {
                     !it.isTodo && it.eventDate >= startOfWeek && it.eventDate <= endOfWeek
                 }
-                todos = filteredItems.filter {
+                rawTodos = filteredItems.filter {
                     it.isTodo && (
                         (!it.isMonthlyScope && it.eventDate >= startOfWeek && it.eventDate <= endOfWeek) ||
                         (it.isMonthlyScope && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month)
@@ -102,10 +117,10 @@ class TodoViewModel @Inject constructor(
                 }
             }
             CalendarViewMode.MONTH -> {
-                schedules = filteredItems.filter {
+                rawSchedules = filteredItems.filter {
                     !it.isTodo && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month
                 }
-                todos = filteredItems.filter {
+                rawTodos = filteredItems.filter {
                     it.isTodo && it.eventDate.year == selectedDate.year && it.eventDate.month == selectedDate.month
                 }
             }
@@ -130,8 +145,8 @@ class TodoViewModel @Inject constructor(
         TodoUiState(
             selectedDate = selectedDate,
             selectedCategory = category,
-            schedules = schedules,
-            todos = todos,
+            schedules = mergeConsecutiveItems(rawSchedules, viewMode),
+            todos = mergeConsecutiveItems(rawTodos, viewMode),
             dateRangeText = dateRangeText
         )
     }.stateIn(
@@ -178,14 +193,17 @@ class TodoViewModel @Inject constructor(
         }
     }
 
-    fun toggleTodo(todo: TodoScheduleEntity) {
+    fun toggleTodo(todo: MergedTodoScheduleItem) {
         viewModelScope.launch {
-            repository.updateTodoSchedule(todo.copy(isCompleted = !todo.isCompleted))
+            val nextState = !todo.isCompleted
+            todo.originalItems.forEach {
+                repository.updateTodoSchedule(it.copy(isCompleted = nextState))
+            }
         }
     }
 
     fun updateTodoSchedule(
-        item: TodoScheduleEntity,
+        item: MergedTodoScheduleItem,
         title: String,
         content: String?,
         isTodo: Boolean,
@@ -196,24 +214,30 @@ class TodoViewModel @Inject constructor(
         isMonthlyScope: Boolean
     ) {
         viewModelScope.launch {
-            repository.updateTodoSchedule(
-                item.copy(
-                    title = title,
-                    content = content,
-                    isTodo = isTodo,
-                    eventDate = eventDate,
-                    startTime = startTime,
-                    endTime = endTime,
-                    category = category,
-                    isMonthlyScope = isMonthlyScope
+            val oldStartDate = item.startDate
+            val offsetDays = java.time.temporal.ChronoUnit.DAYS.between(oldStartDate, eventDate)
+            item.originalItems.forEach { original ->
+                repository.updateTodoSchedule(
+                    original.copy(
+                        title = title,
+                        content = content,
+                        isTodo = isTodo,
+                        eventDate = original.eventDate.plusDays(offsetDays),
+                        startTime = startTime,
+                        endTime = endTime,
+                        category = category,
+                        isMonthlyScope = isMonthlyScope
+                    )
                 )
-            )
+            }
         }
     }
 
-    fun deleteTodoSchedule(item: TodoScheduleEntity) {
+    fun deleteTodoSchedule(item: MergedTodoScheduleItem) {
         viewModelScope.launch {
-            repository.deleteTodoSchedule(item)
+            item.originalItems.forEach {
+                repository.deleteTodoSchedule(it)
+            }
         }
     }
 
@@ -502,4 +526,99 @@ class TodoViewModel @Inject constructor(
         repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(8), isExercised = true))
         repository.insertExerciseSticker(ExerciseStickerEntity(date = today.minusDays(10), isExercised = true))
     }
+
+    private fun mergeConsecutiveItems(items: List<TodoScheduleEntity>, viewMode: CalendarViewMode): List<MergedTodoScheduleItem> {
+        if (viewMode == CalendarViewMode.DAY) {
+            return items.map { it.toMergedItem() }
+        }
+
+        val grouped = items.groupBy { 
+            GroupKey(
+                title = it.title.trim(),
+                content = it.content?.trim(),
+                isTodo = it.isTodo,
+                category = it.category,
+                isMonthlyScope = it.isMonthlyScope
+            )
+        }
+
+        val result = mutableListOf<MergedTodoScheduleItem>()
+
+        for ((key, groupItems) in grouped) {
+            if (key.isMonthlyScope) {
+                result.addAll(groupItems.map { it.toMergedItem() })
+                continue
+            }
+
+            val sorted = groupItems.sortedBy { it.eventDate }
+            var currentGroup = mutableListOf<TodoScheduleEntity>()
+            for (item in sorted) {
+                if (currentGroup.isEmpty()) {
+                    currentGroup.add(item)
+                } else {
+                    val lastItem = currentGroup.last()
+                    if (item.eventDate == lastItem.eventDate.plusDays(1)) {
+                        currentGroup.add(item)
+                    } else if (item.eventDate == lastItem.eventDate) {
+                        currentGroup.add(item)
+                    } else {
+                        result.add(createMergedItem(currentGroup))
+                        currentGroup = mutableListOf(item)
+                    }
+                }
+            }
+            if (currentGroup.isNotEmpty()) {
+                result.add(createMergedItem(currentGroup))
+            }
+        }
+
+        return result.sortedWith(
+            compareBy<MergedTodoScheduleItem> { it.startDate }
+                .thenBy { it.startTime ?: LocalTime.MIN }
+                .thenBy { it.title }
+        )
+    }
+
+    private fun TodoScheduleEntity.toMergedItem(): MergedTodoScheduleItem {
+        return MergedTodoScheduleItem(
+            id = this.id,
+            title = this.title,
+            content = this.content,
+            isTodo = this.isTodo,
+            startDate = this.eventDate,
+            endDate = this.eventDate,
+            startTime = this.startTime,
+            endTime = this.endTime,
+            category = this.category,
+            isCompleted = this.isCompleted,
+            isMonthlyScope = this.isMonthlyScope,
+            originalItems = listOf(this)
+        )
+    }
+
+    private fun createMergedItem(group: List<TodoScheduleEntity>): MergedTodoScheduleItem {
+        val first = group.first()
+        return MergedTodoScheduleItem(
+            id = first.id,
+            title = first.title,
+            content = first.content,
+            isTodo = first.isTodo,
+            startDate = group.minOf { it.eventDate },
+            endDate = group.maxOf { it.eventDate },
+            startTime = first.startTime,
+            endTime = first.endTime,
+            category = first.category,
+            isCompleted = group.all { it.isCompleted },
+            isMonthlyScope = first.isMonthlyScope,
+            originalItems = group
+        )
+    }
 }
+
+data class GroupKey(
+    val title: String,
+    val content: String?,
+    val isTodo: Boolean,
+    val category: CategoryType,
+    val isMonthlyScope: Boolean
+)

@@ -202,7 +202,7 @@ class UserScenarioTest {
 
         // Update item to "가족 행사", Category PERSONAL
         todoViewModel.updateTodoSchedule(
-            item = initialSchedule,
+            item = todoViewModel.uiState.value.schedules[0],
             title = "가족 행사",
             content = null,
             isTodo = false,

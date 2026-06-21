@@ -58,18 +58,18 @@ fun TodoScreen(
 fun DashboardPane(
     state: TodoUiState,
     onSetCategoryFilter: (CategoryType?) -> Unit,
-    onToggleTodo: (TodoScheduleEntity) -> Unit,
-    onDeleteTodoSchedule: (TodoScheduleEntity) -> Unit,
+    onToggleTodo: (MergedTodoScheduleItem) -> Unit,
+    onDeleteTodoSchedule: (MergedTodoScheduleItem) -> Unit,
     onAddTodoSchedule: (String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
-    onUpdateTodoSchedule: (TodoScheduleEntity, String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
+    onUpdateTodoSchedule: (MergedTodoScheduleItem, String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
     modifier: Modifier = Modifier
 
 ) {
     var isAddDialogOpen by remember { mutableStateOf(false) }
-    var selectedItemForOptions by remember { mutableStateOf<TodoScheduleEntity?>(null) }
+    var selectedItemForOptions by remember { mutableStateOf<MergedTodoScheduleItem?>(null) }
     var isOptionsDialogOpen by remember { mutableStateOf(false) }
     var isEditDialogOpen by remember { mutableStateOf(false) }
-    var itemToEdit by remember { mutableStateOf<TodoScheduleEntity?>(null) }
+    var itemToEdit by remember { mutableStateOf<MergedTodoScheduleItem?>(null) }
 
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
     Card(
@@ -260,7 +260,7 @@ fun DashboardPane(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScheduleCardItem(
-    schedule: TodoScheduleEntity,
+    schedule: MergedTodoScheduleItem,
     onLongClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
@@ -276,60 +276,96 @@ fun ScheduleCardItem(
     }
     val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = {},
-                onLongClick = onLongClick
-            )
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val isMerged = schedule.originalItems.size > 1
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // Left Edge Accent Bar
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(24.dp)
-                .background(themeColor, RoundedCornerShape(2.dp))
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                schedule.title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (!schedule.content.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    schedule.content,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        if (isMerged) {
+            if (schedule.originalItems.size > 2) {
+                // Bottom stacked card background
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            val dateStr = schedule.eventDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
-            val timeStr = if (schedule.startTime != null) {
-                if (schedule.endTime != null) {
-                    "${schedule.startTime} - ${schedule.endTime}"
-                } else {
-                    "${schedule.startTime}"
-                }
-            } else {
-                "하루 종일"
-            }
-            Text(
-                "$dateStr · $timeStr",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            // Middle stacked card background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = 4.dp, start = 4.dp, end = 4.dp)
+                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (isMerged) 8.dp else 0.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(bgColor)
+                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = onLongClick
+                )
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Edge Accent Bar
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(24.dp)
+                    .background(themeColor, RoundedCornerShape(2.dp))
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    schedule.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (!schedule.content.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        schedule.content,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                val dateStr = if (isMerged) {
+                    val startStr = schedule.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    val endStr = schedule.endDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    "$startStr ~ $endStr"
+                } else {
+                    schedule.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                }
+
+                val timeStr = if (schedule.startTime != null) {
+                    if (schedule.endTime != null) {
+                        "${schedule.startTime} - ${schedule.endTime}"
+                    } else {
+                        "${schedule.startTime}"
+                    }
+                } else {
+                    "하루 종일"
+                }
+                Text(
+                    "$dateStr · $timeStr",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                )
+            }
         }
     }
 }
@@ -337,8 +373,8 @@ fun ScheduleCardItem(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TodoCardItem(
-    todo: TodoScheduleEntity,
-    onToggle: (TodoScheduleEntity) -> Unit,
+    todo: MergedTodoScheduleItem,
+    onToggle: (MergedTodoScheduleItem) -> Unit,
     onLongClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
@@ -354,66 +390,100 @@ fun TodoCardItem(
     }
     val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = {},
-                onLongClick = onLongClick
-            )
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val isMerged = todo.originalItems.size > 1
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Checkbox(
-            checked = todo.isCompleted,
-            onCheckedChange = { onToggle(todo) },
-            colors = CheckboxDefaults.colors(checkedColor = themeColor)
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                todo.title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
-            )
-            if (!todo.content.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    todo.content,
-                    fontSize = 12.sp,
-                    color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+        if (isMerged) {
+            if (todo.originalItems.size > 2) {
+                // Bottom stacked card background
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            val typeStr = if (!todo.isMonthlyScope) "D-Day" else "월간 범위"
-            val dateStr = if (todo.isMonthlyScope) {
-                todo.eventDate.format(DateTimeFormatter.ofPattern("M월 범위", Locale.KOREAN))
-            } else {
-                todo.eventDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
-            }
-            val timeStr = if (todo.startTime != null) {
-                if (todo.endTime != null) {
-                    "${todo.startTime} - ${todo.endTime}"
-                } else {
-                    "${todo.startTime}"
-                }
-            } else {
-                "하루 종일"
-            }
-            Text(
-                "$dateStr · $timeStr · $typeStr",
-                fontSize = 11.sp,
-                color = themeColor,
-                fontWeight = FontWeight.Medium
+            // Middle stacked card background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = 4.dp, start = 4.dp, end = 4.dp)
+                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (isMerged) 8.dp else 0.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(bgColor)
+                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = onLongClick
+                )
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = todo.isCompleted,
+                onCheckedChange = { onToggle(todo) },
+                colors = CheckboxDefaults.colors(checkedColor = themeColor)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    todo.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
+                )
+                if (!todo.content.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        todo.content,
+                        fontSize = 12.sp,
+                        color = if (todo.isCompleted) MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                val typeStr = if (!todo.isMonthlyScope) "D-Day" else "월간 범위"
+                
+                val dateStr = if (todo.isMonthlyScope) {
+                    todo.startDate.format(DateTimeFormatter.ofPattern("M월 범위", Locale.KOREAN))
+                } else if (isMerged) {
+                    val startStr = todo.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    val endStr = todo.endDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                    "$startStr ~ $endStr"
+                } else {
+                    todo.startDate.format(DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN))
+                }
+
+                val timeStr = if (todo.startTime != null) {
+                    if (todo.endTime != null) {
+                        "${todo.startTime} - ${todo.endTime}"
+                    } else {
+                        "${todo.startTime}"
+                    }
+                } else {
+                    "하루 종일"
+                }
+                Text(
+                    "$dateStr · $timeStr · $typeStr",
+                    fontSize = 11.sp,
+                    color = themeColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
@@ -421,7 +491,7 @@ fun TodoCardItem(
 @Composable
 fun AddEditItemDialog(
     selectedDate: LocalDate,
-    editingItem: TodoScheduleEntity? = null,
+    editingItem: MergedTodoScheduleItem? = null,
     onDismiss: () -> Unit,
     onConfirm: (
         title: String,
@@ -660,7 +730,7 @@ fun AddEditItemDialog(
                     Button(
                         onClick = {
                             if (title.isNotBlank()) {
-                                val eventDate = editingItem?.eventDate ?: selectedDate
+                                val eventDate = editingItem?.startDate ?: selectedDate
                                 if (itemType == "TODO") {
                                     val isMonthly = todoType == "MONTHLY_SCOPE"
                                     onConfirm(
@@ -699,7 +769,7 @@ fun AddEditItemDialog(
 
 @Composable
 fun ItemOptionsDialog(
-    item: TodoScheduleEntity,
+    item: MergedTodoScheduleItem,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
