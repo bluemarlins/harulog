@@ -423,6 +423,12 @@ class TodoViewModel @Inject constructor(
         _isDebugDataEnabled.value = enabled
         viewModelScope.launch {
             if (enabled) {
+                // 1. 더미 데이터를 주입하기 전에 현재 사용자의 실제 데이터를 임시 JSON 스냅샷으로 백업합니다.
+                val snapshot = exportToJson()
+                if (!snapshot.isNullOrBlank()) {
+                    prefs?.edit()?.putString("temp_user_backup_json", snapshot)?.apply()
+                }
+                
                 repository.deleteAllTodoSchedules()
                 repository.deleteAllDiaries()
                 repository.deleteAllExerciseStickers()
@@ -431,9 +437,17 @@ class TodoViewModel @Inject constructor(
                 repository.deleteAllTodoSchedules()
                 repository.deleteAllDiaries()
                 repository.deleteAllExerciseStickers()
+                
+                // 2. 더미 데이터를 비활성화할 때, 저장된 스냅샷이 있다면 자동으로 사용자 실제 데이터를 복원합니다.
+                val tempBackup = prefs?.getString("temp_user_backup_json", null)
+                if (!tempBackup.isNullOrBlank()) {
+                    importFromJson(tempBackup)
+                    prefs?.edit()?.remove("temp_user_backup_json")?.apply()
+                }
             }
         }
     }
+
 
     private suspend fun insertDummyData() {
         val today = LocalDate.now()
