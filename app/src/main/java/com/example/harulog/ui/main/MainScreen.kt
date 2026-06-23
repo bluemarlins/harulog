@@ -15,6 +15,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
@@ -490,6 +492,34 @@ private fun SalaryDaySettingsCard(themeSettingsManager: ThemeSettingsManager) {
     val borderColor  = if (isDark) DarkBorderColor else GrayBorderColor
     val currentDay   by themeSettingsManager.salaryDay.collectAsStateWithLifecycle()
 
+    val lazyListState = rememberLazyListState()
+    val configuration = LocalConfiguration.current
+    val density       = LocalDensity.current
+
+    val screenWidthDp = configuration.screenWidthDp
+    val cardWidthDp   = if (screenWidthDp > 600) 600 else screenWidthDp
+    val lazyRowWidthDp = cardWidthDp - 32 // 16.dp horizontal padding * 2
+
+    // 가로 스크롤 칩들의 중앙 정렬을 위한 offset 계산 (px)
+    // (LazyRow 전체 가용 가로 폭의 절반) - (아이템의 크기 36dp의 절반)
+    val scrollOffsetPx = with(density) {
+        -((lazyRowWidthDp / 2) - 18).dp.toPx().toInt()
+    }
+
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentDay) {
+        val targetIndex = currentDay - 1
+        if (targetIndex in 0..30) {
+            if (!isInitialized) {
+                lazyListState.scrollToItem(targetIndex, scrollOffsetPx)
+                isInitialized = true
+            } else {
+                lazyListState.animateScrollToItem(targetIndex, scrollOffsetPx)
+            }
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
@@ -530,6 +560,7 @@ private fun SalaryDaySettingsCard(themeSettingsManager: ThemeSettingsManager) {
 
             // 날짜 선택 — 가로 스크롤 칩
             LazyRow(
+                state                 = lazyListState,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding        = PaddingValues(horizontal = 2.dp)
             ) {
