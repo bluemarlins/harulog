@@ -501,5 +501,18 @@ fun DateCell(
                     .background(SuccessWorkoutColor)
             )
         }
+
+        // Salary Day Sticker (TopStart overlay badge with Money Emoji)
+        val isSalaryDay = date.dayOfMonth == state.salaryDay
+        if (isSalaryDay) {
+            Text(
+                text = "💸",
+                fontSize = 9.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 2.dp, start = 2.dp)
+            )
+        }
     }
 }
+

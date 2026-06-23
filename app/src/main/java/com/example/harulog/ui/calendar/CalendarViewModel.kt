@@ -6,6 +6,7 @@ import com.example.harulog.data.repository.DataRepository
 import com.example.harulog.data.local.entity.TodoScheduleEntity
 import com.example.harulog.data.local.entity.ExerciseStickerEntity
 import com.example.harulog.utils.SelectedDateManager
+import com.example.harulog.utils.ThemeSettingsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,33 +21,38 @@ data class CalendarUiState(
     val currentMonth: YearMonth = YearMonth.now(),
     val viewMode: CalendarViewMode = CalendarViewMode.MONTH,
     val allTodoSchedules: List<TodoScheduleEntity> = emptyList(),
-    val allStickers: List<ExerciseStickerEntity> = emptyList()
+    val allStickers: List<ExerciseStickerEntity> = emptyList(),
+    val salaryDay: Int = 21
 )
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val repository: DataRepository,
-    private val selectedDateManager: SelectedDateManager
+    private val selectedDateManager: SelectedDateManager,
+    private val themeSettingsManager: ThemeSettingsManager
 ) : ViewModel() {
 
     val uiState: StateFlow<CalendarUiState> = combine(
         selectedDateManager.selectedDate,
         selectedDateManager.viewMode,
         repository.getAllTodoSchedules(),
-        repository.getAllExerciseStickers()
-    ) { selectedDate, viewMode, todoSchedules, stickers ->
+        repository.getAllExerciseStickers(),
+        themeSettingsManager.salaryDay
+    ) { selectedDate, viewMode, todoSchedules, stickers, salaryDay ->
         CalendarUiState(
             selectedDate = selectedDate,
             currentMonth = YearMonth.from(selectedDate),
             viewMode = viewMode,
             allTodoSchedules = todoSchedules,
-            allStickers = stickers
+            allStickers = stickers,
+            salaryDay = salaryDay
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CalendarUiState()
     )
+
 
     fun selectDate(date: LocalDate) {
         selectedDateManager.selectDate(date)
