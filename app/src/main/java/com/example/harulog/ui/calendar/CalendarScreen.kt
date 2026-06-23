@@ -148,13 +148,8 @@ fun CalendarPane(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Icon(
-                            imageVector = Icons.Default.ExpandMore,
-                            contentDescription = "Select Date",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
+
 
                     IconButton(
                         onClick = {
