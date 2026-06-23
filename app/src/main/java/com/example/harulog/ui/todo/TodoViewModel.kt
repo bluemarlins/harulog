@@ -394,11 +394,17 @@ class TodoViewModel @Inject constructor(
             val (completedTodoCount, totalTodoCount, freqPair) = todoPart
             val (mostFreqTitle, mostFreqCount) = freqPair
 
-            // 6. 월급날 D-Day (설정된 일수 기준)
+            // 6. 월급날 D-Day (설정된 일수 기준, 주말인 경우 직전 금요일로 보정)
             val today = LocalDate.now()
             val clampedDay = salaryDayOfMonth.coerceIn(1, yearMonth.lengthOfMonth())
-            val salaryDate = java.time.LocalDate.of(yearMonth.year, yearMonth.month, clampedDay)
-            val salaryDiff = java.time.temporal.ChronoUnit.DAYS.between(today, salaryDate).toInt()
+            val originalSalaryDate = java.time.LocalDate.of(yearMonth.year, yearMonth.month, clampedDay)
+            val adjustedSalaryDate = when (originalSalaryDate.dayOfWeek) {
+                java.time.DayOfWeek.SATURDAY -> originalSalaryDate.minusDays(1)
+                java.time.DayOfWeek.SUNDAY -> originalSalaryDate.minusDays(2)
+                else -> originalSalaryDate
+            }
+            val salaryDiff = java.time.temporal.ChronoUnit.DAYS.between(today, adjustedSalaryDate).toInt()
+
 
             MonthlyDashboardSummary(
                 totalWorkoutCount = workoutCount,

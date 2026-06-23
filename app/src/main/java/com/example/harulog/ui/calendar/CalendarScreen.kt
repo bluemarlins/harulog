@@ -503,7 +503,15 @@ fun DateCell(
         }
 
         // Salary Day Sticker (TopStart overlay badge with Money Emoji)
-        val isSalaryDay = date.dayOfMonth == state.salaryDay
+        val yearMonth = YearMonth.from(date)
+        val clampedDay = state.salaryDay.coerceIn(1, yearMonth.lengthOfMonth())
+        val originalSalaryDate = LocalDate.of(yearMonth.year, yearMonth.month, clampedDay)
+        val adjustedSalaryDate = when (originalSalaryDate.dayOfWeek) {
+            java.time.DayOfWeek.SATURDAY -> originalSalaryDate.minusDays(1)
+            java.time.DayOfWeek.SUNDAY -> originalSalaryDate.minusDays(2)
+            else -> originalSalaryDate
+        }
+        val isSalaryDay = date == adjustedSalaryDate
         if (isSalaryDay) {
             Text(
                 text = "💸",
@@ -515,4 +523,5 @@ fun DateCell(
         }
     }
 }
+
 
