@@ -2,13 +2,16 @@ package com.example.harulog.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
@@ -34,6 +37,14 @@ private val LightColorScheme = lightColorScheme(
     onSurface = LightOnSurface
 )
 
+// Pinterest Shapes: 16px (medium), 32px (large), 8px (small)
+val PinterestShapes = Shapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(32.dp),
+    extraLarge = RoundedCornerShape(32.dp)
+)
+
 @Composable
 fun HarulogTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -52,6 +63,8 @@ fun HarulogTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = PinterestShapes,
         content = content
     )
 }
+
