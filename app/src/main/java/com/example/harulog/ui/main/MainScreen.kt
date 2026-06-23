@@ -139,6 +139,7 @@ internal fun MainContent(
 ) {
     val configuration = LocalConfiguration.current
     val isTablet      = configuration.screenWidthDp > 600
+    val isDark        = MaterialTheme.colorScheme.background == DarkBackground
 
     // 탭 순서: 0=캘린더, 1=다이어리, 2=대시보드, 3=설정
     var currentTab by remember { mutableStateOf(0) }
@@ -157,36 +158,79 @@ internal fun MainContent(
             if (isTablet) {
                 // ── Tablet Layout: 좌측 Navigation Rail + Split View ──────────
                 Row(modifier = Modifier.fillMaxSize()) {
-                    NavigationRail(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        modifier       = Modifier.fillMaxHeight()
+                    // Custom Vertical Navigation Rail (Text-only with vertical spring slider)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(80.dp)
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        NavigationRailItem(
-                            selected = currentTab == 0,
-                            onClick  = { currentTab = 0 },
-                            icon     = { Icon(painterResource(if (currentTab == 0) R.drawable.ic_calendar_blank_fill else R.drawable.ic_calendar_blank_regular), contentDescription = "캘린더") },
-                            label    = { Text("캘린더") }
+                        val tabHeight = 64.dp
+                        val topSpacer = 16.dp
+
+                        // Y축 슬라이더 오프셋 애니메이션 (Spring)
+                        val highlightOffsetY by animateDpAsState(
+                            targetValue = topSpacer + (tabHeight * currentTab),
+                            animationSpec = spring(
+                                dampingRatio = 0.82f,
+                                stiffness = 300f
+                            ),
+                            label = "NavRailHighlightOffset"
                         )
-                        NavigationRailItem(
-                            selected = currentTab == 1,
-                            onClick  = { currentTab = 1 },
-                            icon     = { Icon(painterResource(if (currentTab == 1) R.drawable.ic_book_open_fill else R.drawable.ic_book_open_regular), contentDescription = "다이어리") },
-                            label    = { Text("다이어리") }
+
+                        // Highlight Background Slider Chip (Vertical)
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 6.dp)
+                                .offset(y = highlightOffsetY)
+                                .fillMaxWidth()
+                                .height(tabHeight)
+                                .padding(vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
                         )
-                        NavigationRailItem(
-                            selected = currentTab == 2,
-                            onClick  = { currentTab = 2 },
-                            icon     = { Icon(painterResource(if (currentTab == 2) R.drawable.ic_chart_bar_fill else R.drawable.ic_chart_bar_regular), contentDescription = "대시보드") },
-                            label    = { Text("대시보드") }
-                        )
-                        NavigationRailItem(
-                            selected = currentTab == 3,
-                            onClick  = { currentTab = 3 },
-                            icon     = { Icon(painterResource(if (currentTab == 3) R.drawable.ic_gear_fill else R.drawable.ic_gear_regular), contentDescription = "설정") },
-                            label    = { Text("설정") }
-                        )
+
+                        // Tab Items Column
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = topSpacer),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
+                            labels.forEachIndexed { index, label ->
+                                val isSelected = currentTab == index
+                                val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(tabHeight)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) { currentTab = index },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = tintColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                     }
+
+                    // Divider Line (Pinterest Hairline style)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(1.dp)
+                            .background(if (isDark) DarkBorderColor else GrayBorderColor)
+                    )
 
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
                         AnimatedContent(
