@@ -163,13 +163,13 @@ internal fun MainContent(
                         modifier = Modifier
                             .fillMaxHeight()
                             .width(88.dp)
-                            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
-                            .shadow(8.dp, RoundedCornerShape(24.dp))
-                            .border(0.8.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
+                            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
-                        )
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.25f))
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize()
@@ -401,13 +401,13 @@ internal fun MainContent(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
-                        .fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(24.dp))
-                        .border(0.8.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
+                        .fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
-                    )
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.25f))
                 ) {
                     BoxWithConstraints(
                         modifier = Modifier
