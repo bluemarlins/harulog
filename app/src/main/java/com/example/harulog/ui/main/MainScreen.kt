@@ -158,79 +158,81 @@ internal fun MainContent(
             if (isTablet) {
                 // ── Tablet Layout: 좌측 Navigation Rail + Split View ──────────
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // Custom Vertical Navigation Rail (Text-only with vertical spring slider)
-                    Box(
+                    // Floating Vertical Navigation Bar Card (Pinterest style)
+                    Card(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .width(80.dp)
-                            .background(MaterialTheme.colorScheme.surface)
+                            .width(88.dp)
+                            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
+                            .shadow(8.dp, RoundedCornerShape(24.dp))
+                            .border(0.8.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
+                        )
                     ) {
-                        val tabHeight = 64.dp
-                        val topSpacer = 16.dp
-
-                        // Y축 슬라이더 오프셋 애니메이션 (Spring)
-                        val highlightOffsetY by animateDpAsState(
-                            targetValue = topSpacer + (tabHeight * currentTab),
-                            animationSpec = spring(
-                                dampingRatio = 0.82f,
-                                stiffness = 300f
-                            ),
-                            label = "NavRailHighlightOffset"
-                        )
-
-                        // Highlight Background Slider Chip (Vertical)
                         Box(
-                            modifier = Modifier
-                                .padding(horizontal = 6.dp)
-                                .offset(y = highlightOffsetY)
-                                .fillMaxWidth()
-                                .height(tabHeight)
-                                .padding(vertical = 4.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
-                        )
-
-                        // Tab Items Column
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = topSpacer),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
-                            labels.forEachIndexed { index, label ->
-                                val isSelected = currentTab == index
-                                val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            val tabHeight = 64.dp
+                            val topSpacer = 16.dp
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(tabHeight)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) { currentTab = index },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        color = tintColor,
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
+                            // Y축 슬라이더 오프셋 애니메이션 (Spring)
+                            val highlightOffsetY by animateDpAsState(
+                                targetValue = topSpacer + (tabHeight * currentTab),
+                                animationSpec = spring(
+                                    dampingRatio = 0.82f,
+                                    stiffness = 300f
+                                ),
+                                label = "NavRailHighlightOffset"
+                            )
+
+                            // Highlight Background Slider Chip (Vertical)
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 6.dp)
+                                    .offset(y = highlightOffsetY)
+                                    .fillMaxWidth()
+                                    .height(tabHeight)
+                                    .padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
+                            )
+
+                            // Tab Items Column
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = topSpacer),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
+                                labels.forEachIndexed { index, label ->
+                                    val isSelected = currentTab == index
+                                    val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(tabHeight)
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null
+                                            ) { currentTab = index },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            color = tintColor,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-
-                    // Divider Line (Pinterest Hairline style)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(1.dp)
-                            .background(if (isDark) DarkBorderColor else GrayBorderColor)
-                    )
 
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
                         AnimatedContent(
