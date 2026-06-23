@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -343,7 +348,7 @@ internal fun MainContent(
                     }
                 }
 
-                // 모바일용 Floating Bottom Navigation Bar Overlay
+                // 모바일용 Floating Bottom Navigation Bar Overlay (Text-only Segmented Control with spring slider)
                 val isDark = MaterialTheme.colorScheme.background == DarkBackground
                 val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
                 Card(
@@ -355,68 +360,72 @@ internal fun MainContent(
                         .border(0.8.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
                     )
                 ) {
-                    Row(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
-                            .padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(56.dp)
+                            .padding(4.dp)
                     ) {
-                        val tabItems = listOf(
-                            TabItem(0, R.drawable.ic_calendar_blank_fill, R.drawable.ic_calendar_blank_regular, "캘린더"),
-                            TabItem(1, R.drawable.ic_book_open_fill, R.drawable.ic_book_open_regular, "다이어리"),
-                            TabItem(2, R.drawable.ic_chart_bar_fill, R.drawable.ic_chart_bar_regular, "대시보드"),
-                            TabItem(3, R.drawable.ic_gear_fill, R.drawable.ic_gear_regular, "설정")
-                        )
-                        tabItems.forEach { item ->
-                            val isSelected = currentTab == item.index
-                            val tintColor = if (isSelected) MaterialTheme.colorScheme.onBackground
-                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            val iconRes = if (isSelected) item.filledIcon else item.outlinedIcon
+                        val tabCount = 4
+                        val tabWidth = maxWidth / tabCount
 
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { currentTab = item.index },
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
+                        // 슬라이딩 하이라이트 배경 칩 위치 계산 (Spring Physics 적용)
+                        val highlightOffset by animateDpAsState(
+                            targetValue = tabWidth * currentTab,
+                            animationSpec = spring(
+                                dampingRatio = 0.82f, // 통통 튀지 않고 부드럽게 안착하는 댐핑 비율
+                                stiffness = 300f     // StiffnessMedium 수준
+                            ),
+                            label = "NavHighlightOffset"
+                        )
+
+                        // Highlight Slider Background
+                        Box(
+                            modifier = Modifier
+                                .offset(x = highlightOffset)
+                                .width(tabWidth)
+                                .fillMaxHeight()
+                                .padding(2.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
+                        )
+
+                        // Tab Texts Row
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
+                            labels.forEachIndexed { index, label ->
+                                val isSelected = currentTab == index
+                                val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+
                                 Box(
                                     modifier = Modifier
-                                        .height(32.dp)
-                                        .width(64.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            if (isSelected) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)
-                                            else Color.Transparent
-                                        ),
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) { currentTab = index },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = iconRes),
-                                        contentDescription = item.label,
-                                        tint = tintColor
+                                    Text(
+                                        text = label,
+                                        color = tintColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = item.label,
-                                    color = tintColor,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
                             }
                         }
                     }
                 }
+
             }
         }
     }
