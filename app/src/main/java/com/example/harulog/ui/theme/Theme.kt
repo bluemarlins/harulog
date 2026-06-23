@@ -15,27 +15,66 @@ import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
-    secondary = DarkSecondary,
-    tertiary = DarkTertiary,
-    background = DarkBackground,
-    surface = DarkSurface,
     onPrimary = DarkOnPrimary,
+    primaryContainer = PinterestRed,
+    onPrimaryContainer = Canvas,
+    
+    secondary = DarkSecondary,
     onSecondary = DarkOnSecondary,
+    secondaryContainer = SurfaceDark,
+    onSecondaryContainer = Canvas,
+    
+    tertiary = DarkTertiary,
+    onTertiary = Canvas,
+    
+    background = DarkBackground,
     onBackground = DarkOnBackground,
-    onSurface = DarkOnSurface
+    
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = SurfaceDark,
+    onSurfaceVariant = SecondaryBg,
+    
+    outline = HairlineSoft,
+    outlineVariant = Hairline,
+    
+    error = Error,
+    onError = Canvas,
+    errorContainer = ErrorDeep,
+    onErrorContainer = Canvas
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
-    secondary = LightSecondary,
-    tertiary = LightTertiary,
-    background = LightBackground,
-    surface = LightSurface,
     onPrimary = LightOnPrimary,
+    primaryContainer = PinterestRed,
+    onPrimaryContainer = Canvas,
+    
+    secondary = LightSecondary,
     onSecondary = LightOnSecondary,
+    secondaryContainer = SecondaryBg,
+    onSecondaryContainer = Ink,
+    
+    tertiary = LightTertiary,
+    onTertiary = Canvas,
+    
+    background = LightBackground,
     onBackground = LightOnBackground,
-    onSurface = LightOnSurface
+    
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = SurfaceCard,       // M3 컴포넌트(Card 등)가 기본으로 사용하는 배경색
+    onSurfaceVariant = Mute,             // 보조 텍스트 색상
+    
+    outline = Hairline,                  // 보더 및 경계선
+    outlineVariant = HairlineSoft,
+    
+    error = Error,
+    onError = Canvas,
+    errorContainer = ErrorDeep,
+    onErrorContainer = Canvas
 )
+
 
 // Pinterest Shapes: 16px (medium), 32px (large), 8px (small)
 val PinterestShapes = Shapes(
