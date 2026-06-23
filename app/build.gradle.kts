@@ -105,6 +105,9 @@ dependencies {
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
 
+  // Google Fonts (Compose)
+  implementation(libs.androidx.compose.ui.text.google.fonts)
+
   // Dagger Hilt
   implementation(libs.hilt.android)
   ksp(libs.hilt.compiler)

@@ -10,11 +10,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.res.painterResource
+import com.example.harulog.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +50,13 @@ import com.example.harulog.ui.common.SegmentedControl
 import com.example.harulog.ui.todo.TodoViewModel
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
+private data class TabItem(
+    val index: Int,
+    val filledIcon: Int,
+    val outlinedIcon: Int,
+    val label: String
+)
 
 @Composable
 fun MainScreen(
@@ -146,88 +158,103 @@ internal fun MainContent(
                         NavigationRailItem(
                             selected = currentTab == 0,
                             onClick  = { currentTab = 0 },
-                            icon     = { Icon(Icons.Outlined.DateRange, contentDescription = "캘린더") },
+                            icon     = { Icon(painterResource(if (currentTab == 0) R.drawable.ic_calendar_blank_fill else R.drawable.ic_calendar_blank_regular), contentDescription = "캘린더") },
                             label    = { Text("캘린더") }
                         )
                         NavigationRailItem(
                             selected = currentTab == 1,
                             onClick  = { currentTab = 1 },
-                            icon     = { Icon(Icons.Outlined.Edit, contentDescription = "다이어리") },
+                            icon     = { Icon(painterResource(if (currentTab == 1) R.drawable.ic_book_open_fill else R.drawable.ic_book_open_regular), contentDescription = "다이어리") },
                             label    = { Text("다이어리") }
                         )
                         NavigationRailItem(
                             selected = currentTab == 2,
                             onClick  = { currentTab = 2 },
-                            icon     = { Icon(Icons.Outlined.Analytics, contentDescription = "대시보드") },
+                            icon     = { Icon(painterResource(if (currentTab == 2) R.drawable.ic_chart_bar_fill else R.drawable.ic_chart_bar_regular), contentDescription = "대시보드") },
                             label    = { Text("대시보드") }
                         )
                         NavigationRailItem(
                             selected = currentTab == 3,
                             onClick  = { currentTab = 3 },
-                            icon     = { Icon(Icons.Outlined.Settings, contentDescription = "설정") },
+                            icon     = { Icon(painterResource(if (currentTab == 3) R.drawable.ic_gear_fill else R.drawable.ic_gear_regular), contentDescription = "설정") },
                             label    = { Text("설정") }
                         )
                     }
 
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
-                        when (currentTab) {
-                            0 -> {
-                                // 캘린더 + 할일/일정 목록 가로 분할 뷰
-                                Row(
-                                    modifier = Modifier.fillMaxSize(),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    CalendarScreen(
-                                        viewModel = calendarViewModel,
-                                        modifier  = Modifier.weight(1.2f).fillMaxHeight()
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .width(1.dp)
-                                            .background(GrayBorderColor)
-                                    )
-                                    com.example.harulog.ui.todo.TodoScreen(
-                                        viewModel = todoViewModel,
-                                        modifier  = Modifier.weight(1f).fillMaxHeight()
+                        AnimatedContent(
+                            targetState = currentTab,
+                            transitionSpec = {
+                                if (targetState > initialState) {
+                                    (slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(300))) togetherWith
+                                            (slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(300)))
+                                } else {
+                                    (slideInHorizontally { width -> -width } + fadeIn(animationSpec = tween(300))) togetherWith
+                                            (slideOutHorizontally { width -> width } + fadeOut(animationSpec = tween(300)))
+                                }
+                            },
+                            label = "TabletTabTransition"
+                        ) { targetTab ->
+                            when (targetTab) {
+                                0 -> {
+                                    // 캘린더 + 할일/일정 목록 가로 분할 뷰
+                                    Row(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        CalendarScreen(
+                                            viewModel = calendarViewModel,
+                                            modifier  = Modifier.weight(1.2f).fillMaxHeight()
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .width(1.dp)
+                                                .background(GrayBorderColor)
+                                        )
+                                        com.example.harulog.ui.todo.TodoScreen(
+                                            viewModel = todoViewModel,
+                                            modifier  = Modifier.weight(1f).fillMaxHeight()
+                                        )
+                                    }
+                                }
+                                1 -> {
+                                    // 다이어리 화면 단독 전체 화면 노출
+                                    DiaryScreen(
+                                        viewModel = diaryViewModel,
+                                        modifier  = Modifier.fillMaxSize()
                                     )
                                 }
-                            }
-                            1 -> {
-                                // 다이어리 화면 단독 전체 화면 노출
-                                DiaryScreen(
-                                    viewModel = diaryViewModel,
-                                    modifier  = Modifier.fillMaxSize()
-                                )
-                            }
-                            2 -> {
-                                AiDashboardScreen(
-                                    todoViewModel = todoViewModel,
-                                    modifier      = Modifier.fillMaxSize()
-                                )
-                            }
-                            else -> {
-                                Column(
-                                    modifier = Modifier
-                                        .widthIn(max = 600.dp)
-                                        .fillMaxHeight()
-                                        .padding(vertical = 16.dp),
-                                    verticalArrangement   = Arrangement.spacedBy(16.dp),
-                                    horizontalAlignment   = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        "설정 및 백업",
-                                        fontSize   = 20.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color      = MaterialTheme.colorScheme.onBackground,
-                                        modifier   = Modifier.padding(bottom = 8.dp)
+                                2 -> {
+                                    AiDashboardScreen(
+                                        todoViewModel = todoViewModel,
+                                        modifier      = Modifier.fillMaxSize()
                                     )
-                                    ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
-                                    DebugDataSettingsCard(todoViewModel = todoViewModel)
-                                    BackupRestoreCard(
-                                        onExportBackup = onExportBackup,
-                                        onImportBackup = onImportBackup
-                                    )
+                                }
+                                else -> {
+                                    Column(
+                                        modifier = Modifier
+                                            .widthIn(max = 600.dp)
+                                            .fillMaxHeight()
+                                            .padding(vertical = 16.dp),
+                                        verticalArrangement   = Arrangement.spacedBy(16.dp),
+                                        horizontalAlignment   = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            "설정 및 백업",
+                                            fontSize   = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color      = MaterialTheme.colorScheme.onBackground,
+                                            modifier   = Modifier.padding(bottom = 8.dp)
+                                        )
+                                        ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
+                                        SalaryDaySettingsCard(themeSettingsManager = themeSettingsManager)
+                                        DebugDataSettingsCard(todoViewModel = todoViewModel)
+                                        BackupRestoreCard(
+                                            onExportBackup = onExportBackup,
+                                            onImportBackup = onImportBackup
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -240,59 +267,75 @@ internal fun MainContent(
                         .fillMaxSize()
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 0.dp)
                 ) {
-                    when (currentTab) {
-                        // 0: 캘린더 — 상단 캘린더 그리드 + 하단 할 일/일정 리스트
-                        0 -> {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                CalendarScreen(
-                                    viewModel = calendarViewModel,
-                                    isExpanded = isCalendarExpanded,
-                                    onToggleExpand = { isCalendarExpanded = !isCalendarExpanded },
-                                    modifier  = if (isCalendarExpanded) Modifier.weight(1.2f) else Modifier.wrapContentHeight()
-                                )
-                                com.example.harulog.ui.todo.TodoScreen(
-                                    viewModel = todoViewModel,
-                                    modifier  = Modifier.weight(1f)
+                    AnimatedContent(
+                        targetState = currentTab,
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                (slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(300))) togetherWith
+                                        (slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(300)))
+                            } else {
+                                (slideInHorizontally { width -> -width } + fadeIn(animationSpec = tween(300))) togetherWith
+                                        (slideOutHorizontally { width -> width } + fadeOut(animationSpec = tween(300)))
+                            }
+                        },
+                        label = "MobileTabTransition",
+                        modifier = Modifier.weight(1f)
+                    ) { targetTab ->
+                        when (targetTab) {
+                            // 0: 캘린더 — 상단 캘린더 그리드 + 하단 할 일/일정 리스트
+                            0 -> {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    CalendarScreen(
+                                        viewModel = calendarViewModel,
+                                        isExpanded = isCalendarExpanded,
+                                        onToggleExpand = { isCalendarExpanded = !isCalendarExpanded },
+                                        modifier  = if (isCalendarExpanded) Modifier.aspectRatio(1f) else Modifier.wrapContentHeight()
+                                    )
+                                    com.example.harulog.ui.todo.TodoScreen(
+                                        viewModel = todoViewModel,
+                                        modifier  = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            // 1: 다이어리
+                            1 -> {
+                                DiaryScreen(
+                                    viewModel = diaryViewModel,
+                                    modifier  = Modifier.fillMaxSize()
                                 )
                             }
-                        }
-                        // 1: 다이어리
-                        1 -> {
-                            DiaryScreen(
-                                viewModel = diaryViewModel,
-                                modifier  = Modifier.fillMaxSize()
-                            )
-                        }
-                        // 2: 대시보드 (AI 요약)
-                        2 -> {
-                            AiDashboardScreen(
-                                todoViewModel = todoViewModel,
-                                modifier      = Modifier.fillMaxSize()
-                            )
-                        }
-                        // 3: 설정
-                        3 -> {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement   = Arrangement.spacedBy(16.dp),
-                                horizontalAlignment   = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "설정 및 백업",
-                                    fontSize   = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = MaterialTheme.colorScheme.onBackground,
-                                    modifier   = Modifier.padding(bottom = 8.dp)
+                            // 2: 대시보드 (AI 요약)
+                            2 -> {
+                                AiDashboardScreen(
+                                    todoViewModel = todoViewModel,
+                                    modifier      = Modifier.fillMaxSize()
                                 )
-                                ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
-                                DebugDataSettingsCard(todoViewModel = todoViewModel)
-                                BackupRestoreCard(
-                                    onExportBackup = onExportBackup,
-                                    onImportBackup = onImportBackup
-                                )
+                            }
+                            // 3: 설정
+                            3 -> {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement   = Arrangement.spacedBy(16.dp),
+                                    horizontalAlignment   = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        "설정 및 백업",
+                                        fontSize   = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color      = MaterialTheme.colorScheme.onBackground,
+                                        modifier   = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
+                                    SalaryDaySettingsCard(themeSettingsManager = themeSettingsManager)
+                                    DebugDataSettingsCard(todoViewModel = todoViewModel)
+                                    BackupRestoreCard(
+                                        onExportBackup = onExportBackup,
+                                        onImportBackup = onImportBackup
+                                    )
+                                }
                             }
                         }
                     }
@@ -307,7 +350,7 @@ internal fun MainContent(
                         .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
                         .fillMaxWidth()
                         .shadow(8.dp, RoundedCornerShape(24.dp))
-                        .border(1.dp, borderColor, RoundedCornerShape(24.dp)),
+                        .border(0.8.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
@@ -321,16 +364,18 @@ internal fun MainContent(
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        listOf(
-                            Triple(0, Icons.Outlined.DateRange, "캘린더"),
-                            Triple(1, Icons.Outlined.Edit, "다이어리"),
-                            Triple(2, Icons.Outlined.Analytics, "대시보드"),
-                            Triple(3, Icons.Outlined.Settings, "설정")
-                        ).forEach { (tabIndex, icon, label) ->
-                            val isSelected = currentTab == tabIndex
-                            val tintColor = if (isSelected) MaterialTheme.colorScheme.primary 
-                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            
+                        val tabItems = listOf(
+                            TabItem(0, R.drawable.ic_calendar_blank_fill, R.drawable.ic_calendar_blank_regular, "캘린더"),
+                            TabItem(1, R.drawable.ic_book_open_fill, R.drawable.ic_book_open_regular, "다이어리"),
+                            TabItem(2, R.drawable.ic_chart_bar_fill, R.drawable.ic_chart_bar_regular, "대시보드"),
+                            TabItem(3, R.drawable.ic_gear_fill, R.drawable.ic_gear_regular, "설정")
+                        )
+                        tabItems.forEach { item ->
+                            val isSelected = currentTab == item.index
+                            val tintColor = if (isSelected) MaterialTheme.colorScheme.onBackground
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            val iconRes = if (isSelected) item.filledIcon else item.outlinedIcon
+
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -338,7 +383,7 @@ internal fun MainContent(
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
-                                    ) { currentTab = tabIndex },
+                                    ) { currentTab = item.index },
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
@@ -348,20 +393,20 @@ internal fun MainContent(
                                         .width(64.dp)
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(
-                                            if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                            if (isSelected) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)
                                             else Color.Transparent
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = icon,
-                                        contentDescription = label,
+                                        painter = painterResource(id = iconRes),
+                                        contentDescription = item.label,
                                         tint = tintColor
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = label,
+                                    text = item.label,
                                     color = tintColor,
                                     fontSize = 11.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -430,6 +475,90 @@ private fun ThemeSettingsCard(
                     }
                 }
             )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SalaryDaySettingsCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SalaryDaySettingsCard(themeSettingsManager: ThemeSettingsManager) {
+    val isDark       = MaterialTheme.colorScheme.background == DarkBackground
+    val borderColor  = if (isDark) DarkBorderColor else GrayBorderColor
+    val currentDay   by themeSettingsManager.salaryDay.collectAsStateWithLifecycle()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border   = BorderStroke(1.dp, borderColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 헤더
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint     = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Column {
+                    Text(
+                        "월급날 설정",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 15.sp,
+                        color      = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "매달 ${currentDay}일에 월급을 받아요",
+                        fontSize = 12.sp,
+                        color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+
+            // 날짜 선택 — 가로 스크롤 칩
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding        = PaddingValues(horizontal = 2.dp)
+            ) {
+                items((1..31).toList()) { day ->
+                    val selected = day == currentDay
+                    Surface(
+                        shape   = RoundedCornerShape(50),
+                        color   = if (selected)
+                                      MaterialTheme.colorScheme.primary
+                                  else
+                                      MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable { themeSettingsManager.setSalaryDay(day) }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text       = day.toString(),
+                                fontSize   = 12.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color      = if (selected)
+                                                 MaterialTheme.colorScheme.onPrimary
+                                             else
+                                                 MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

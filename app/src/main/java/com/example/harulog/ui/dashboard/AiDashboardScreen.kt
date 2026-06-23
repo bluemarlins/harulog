@@ -21,11 +21,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.harulog.R
 import com.example.harulog.data.local.entity.CategoryType
 import com.example.harulog.data.local.entity.TodoScheduleEntity
 import com.example.harulog.ui.theme.*
@@ -36,6 +41,26 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Google Fonts Provider — Fredoka (둥글둥글 볼드 버블 폰트)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage    = "com.google.android.gms",
+    certificates       = R.array.com_google_android_gms_fonts_certs
+)
+
+private val fredokaFont = GoogleFont("Fredoka")
+
+private val FredokaFamily = FontFamily(
+    Font(
+        googleFont    = fredokaFont,
+        fontProvider  = provider,
+        weight        = FontWeight.Bold
+    )
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Screen Entry
@@ -99,6 +124,8 @@ fun AiDashboardContent(
     dashboardSummary: MonthlyDashboardSummary,
     modifier: Modifier = Modifier
 ) {
+    val currentMonth = YearMonth.from(today)
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -106,53 +133,70 @@ fun AiDashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 96.dp)
     ) {
-        // ── 한달 요약 섹션 ──────────────────────────────────────────────
+        // ── ① 캘리그라피 월 헤더 ──────────────────────────────────────────
         item {
-            DashboardSectionHeader(
-                icon = Icons.Outlined.Info,
-                title = "한달 요약 리포트",
-                tint = MaterialTheme.colorScheme.primary
-            )
+            MonthCalligraphyHeader(month = currentMonth)
         }
 
-        // AI 요약 배너 (플레이스홀더)
-        item {
-            AiSummaryBanner()
-        }
-
-        // 장기 일정 하이라이트 카드 (최장 연속 일정 2일 이상 시 노출)
-        if (dashboardSummary.longestScheduleDuration >= 2 && dashboardSummary.longestScheduleTitle != null) {
-            item {
-                LongestScheduleHighlightCard(
-                    title = dashboardSummary.longestScheduleTitle,
-                    duration = dashboardSummary.longestScheduleDuration,
-                    periodText = dashboardSummary.longestSchedulePeriodText ?: ""
-                )
-            }
-        }
-
-        // 운동 & 연차 요약 카드 (가로 2열 배치)
+        // ── ② 핵심 지표 상단 2열 (월급 D-Day / 운동 횟수) ───────────────────
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    WorkoutMotivationCard(
-                        count = dashboardSummary.totalWorkoutCount,
+                    SalaryDayCard(diff = dashboardSummary.salaryDayDiff)
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    WorkoutCountCard(
+                        count   = dashboardSummary.totalWorkoutCount,
                         message = dashboardSummary.workoutMotivationMessage
                     )
                 }
+            }
+        }
+
+        // ── ③ 연차 사용 현황 / 완료 할일 수 ──────────────────────────────────
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Box(modifier = Modifier.weight(1f)) {
                     AnnualLeaveListCard(
                         count = dashboardSummary.annualLeaveCount,
                         dates = dashboardSummary.annualLeaveDates
                     )
                 }
+                Box(modifier = Modifier.weight(1f)) {
+                    CompletedTodoCard(
+                        completed = dashboardSummary.completedTodoCount,
+                        total     = dashboardSummary.totalTodoCount
+                    )
+                }
             }
         }
 
-        // ── 이번 달 미완료 할 일 경고 ─────────────────────────────────────
+        // ── ④ 이번 달 일정 요약 ───────────────────────────────────────────
+        item {
+            DashboardSectionHeader(
+                icon  = Icons.Outlined.Star,
+                title = "이번 달 일정 요약",
+                tint  = MaterialTheme.colorScheme.primary
+            )
+        }
+        item {
+            MonthlyScheduleSummaryCard(
+                mostFreqTitle    = dashboardSummary.mostFrequentScheduleTitle,
+                mostFreqCount    = dashboardSummary.mostFrequentScheduleCount,
+                longestTitle     = dashboardSummary.longestScheduleTitle,
+                longestDuration  = dashboardSummary.longestScheduleDuration,
+                longestPeriod    = dashboardSummary.longestSchedulePeriodText,
+                totalScheduleCount = dashboardSummary.totalScheduleCount
+            )
+        }
+
+        // ── ⑤ 이번 달 미완료 할 일 경고 ─────────────────────────────────────
         if (overdueMonthlyTodos.isNotEmpty()) {
             item {
                 DashboardSectionHeader(
@@ -166,11 +210,11 @@ fun AiDashboardContent(
             }
         }
 
-        // ── 이번 주 일정 요약 ─────────────────────────────────────────────
+        // ── ⑥ 이번 주 일정 요약 ─────────────────────────────────────────────
         item {
             DashboardSectionHeader(
                 icon  = Icons.Outlined.Star,
-                title = "이번 주 일정 요약",
+                title = "이번 주 일정",
                 tint  = MaterialTheme.colorScheme.primary
             )
             Text(
@@ -191,8 +235,6 @@ fun AiDashboardContent(
                 WeekScheduleCard(schedule = schedule, today = today)
             }
         }
-
-
     }
 }
 
@@ -203,18 +245,27 @@ fun AiDashboardContent(
 /** AI 주간/월간 요약 영역 — 추후 실제 AI 응답으로 교체 */
 @Composable
 private fun AiSummaryBanner() {
+    val auroraBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF4F46E5), // Indigo
+            Color(0xFF7C3AED), // Violet
+            Color(0xFFEC4899), // Pink
+            Color(0xFF06B6D4)  // Cyan
+        )
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
-                    )
-                )
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color(0xFF7C3AED),
+                spotColor = Color(0xFFEC4899)
             )
+            .clip(RoundedCornerShape(20.dp))
+            .background(auroraBrush)
+            .border(0.8.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
             .padding(20.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -258,6 +309,315 @@ private fun AiSummaryBanner() {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Calligraphy Month Header
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun MonthCalligraphyHeader(month: YearMonth) {
+    val monthName = month.month.getDisplayName(
+        java.time.format.TextStyle.FULL,
+        Locale.ENGLISH
+    ) // e.g. "June"
+    val year = month.year.toString()
+
+    val isDark      = MaterialTheme.colorScheme.background == DarkBackground
+    // Design.md 컬러 스킴 적용
+    val primaryColor    = if (isDark) DarkPrimary else LightPrimary
+    val secondaryColor  = if (isDark) DarkSecondary else LightSecondary
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text       = monthName,
+            fontFamily = FredokaFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize   = 68.sp,
+            lineHeight = 72.sp,
+            color      = primaryColor
+        )
+        Text(
+            text       = year,
+            fontFamily = FredokaFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize   = 20.sp,
+            lineHeight = 24.sp,
+            color      = secondaryColor,
+            modifier   = Modifier.padding(start = 4.dp, top = 2.dp)
+        )
+    }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SalaryDayCard — 월급날 D-Day
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SalaryDayCard(diff: Int) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val isToday = diff == 0
+    val isPast  = diff < 0
+
+    val bgColor     = if (isDark) Color(0xFF1A2A3A) else Color(0xFFE8F4FD)
+    val borderColor = if (isDark) Color(0xFF264559) else Color(0xFFB3D9F5)
+    val tintColor   = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
+
+    val label = when {
+        isToday -> "오늘 💰"
+        isPast  -> "D+${-diff}"
+        else    -> "D-${diff}"
+    }
+    val subLabel = when {
+        isToday -> "월급날이에요!"
+        isPast  -> "${-diff}일 전 지났어요"
+        else    -> "${diff}일 후 월급날"
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            "월급날",
+            fontSize   = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color      = tintColor
+        )
+        Text(
+            label,
+            fontSize   = 28.sp,
+            fontWeight = FontWeight.Black,
+            color      = if (isToday) MaterialTheme.colorScheme.error else tintColor
+        )
+        Text(
+            subLabel,
+            fontSize  = 10.sp,
+            lineHeight= 14.sp,
+            color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WorkoutCountCard — 이달 운동 횟수
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun WorkoutCountCard(count: Int, message: String) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val bgColor     = if (isDark) Color(0xFF1B2E24) else Color(0xFFE8F5E9)
+    val borderColor = if (isDark) Color(0xFF2E4D3E) else Color(0xFFC8E6C9)
+    val tintColor   = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            "이달 운동",
+            fontSize   = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color      = tintColor
+        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                "$count",
+                fontSize   = 28.sp,
+                fontWeight = FontWeight.Black,
+                color      = tintColor
+            )
+            Text(
+                " 회",
+                fontSize  = 13.sp,
+                fontWeight= FontWeight.Medium,
+                color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier  = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        Text(
+            message,
+            fontSize  = 10.sp,
+            lineHeight= 14.sp,
+            color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+            maxLines  = 2
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CompletedTodoCard — 이달 완료한 할일 수
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun CompletedTodoCard(completed: Int, total: Int) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val bgColor     = if (isDark) Color(0xFF2A1F3D) else Color(0xFFF3E5F5)
+    val borderColor = if (isDark) Color(0xFF4C3069) else Color(0xFFE1BEE7)
+    val tintColor   = if (isDark) Color(0xFFBA68C8) else Color(0xFF8E24AA)
+    val progress    = if (total > 0) completed.toFloat() / total.toFloat() else 0f
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            "이달 완료",
+            fontSize   = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color      = tintColor
+        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                "$completed",
+                fontSize   = 28.sp,
+                fontWeight = FontWeight.Black,
+                color      = tintColor
+            )
+            Text(
+                " / ${total}건",
+                fontSize  = 12.sp,
+                fontWeight= FontWeight.Medium,
+                color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier  = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        // 진행률 바
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(tintColor.copy(alpha = 0.2f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(tintColor)
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MonthlyScheduleSummaryCard — 이달 일정 요약 (가장 많은 / 가장 긴)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun MonthlyScheduleSummaryCard(
+    mostFreqTitle: String?,
+    mostFreqCount: Int,
+    longestTitle: String?,
+    longestDuration: Int,
+    longestPeriod: String?,
+    totalScheduleCount: Int
+) {
+    val isDark      = MaterialTheme.colorScheme.background == DarkBackground
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 총 일정 일수
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                "이번 달 일정",
+                fontSize   = 12.sp,
+                color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                "총 ${totalScheduleCount}일",
+                fontSize   = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color      = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // 구분선
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.8.dp)
+                .background(borderColor)
+        )
+
+        // 가장 많았던 일정
+        SummaryRow(
+            label = "가장 많았던 일정",
+            value = if (mostFreqTitle != null) "$mostFreqTitle  (${mostFreqCount}일)" else "데이터 없음",
+            tint  = MaterialTheme.colorScheme.primary
+        )
+
+        // 가장 길었던 일정
+        SummaryRow(
+            label = "가장 길었던 일정",
+            value = if (longestTitle != null && longestDuration >= 2)
+                        "$longestTitle  (${longestDuration}일 연속, $longestPeriod)"
+                    else "연속 2일 이상 일정 없음",
+            tint  = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+private fun SummaryRow(label: String, value: String, tint: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            label,
+            fontSize   = 11.sp,
+            color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        )
+        Text(
+            value,
+            fontSize   = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color      = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DashboardSectionHeader
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 private fun DashboardSectionHeader(
     icon: ImageVector,
@@ -284,8 +644,12 @@ private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
     } else {
         if (isDark) PersonalDarkPrimaryColor else PersonalPrimaryColor
     }
-    val bgColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.30f)
-    val borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
+    val bgColor = if (todo.category == CategoryType.WORK) {
+        if (isDark) WorkDarkBackgroundColor else WorkBackgroundColor
+    } else {
+        if (isDark) PersonalDarkBackgroundColor else PersonalBackgroundColor
+    }
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
 
     val isMerged = todo.originalItems.size > 1
 
@@ -357,12 +721,18 @@ private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
                     color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
             }
-            Icon(
-                Icons.Outlined.Warning,
-                contentDescription = null,
-                tint   = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(18.dp)
-            )
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = themeColor.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    "할 일",
+                    fontSize   = 10.sp,
+                    color      = themeColor,
+                    fontWeight = FontWeight.Bold,
+                    modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
         }
     }
 }

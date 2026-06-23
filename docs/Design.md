@@ -66,9 +66,13 @@
 * **형태**: 지름 `10.dp` 크기의 원형 배지 (`SuccessWorkoutColor` 적용).
 
 ### 4.4 DateCell (달력 날짜 셀)
-* **선택 상태**: `LightPrimary` 색상의 원형 배경 (`32.dp` 크기), 텍스트는 흰색(`Color.White`) Bold.
-* **오늘 날짜**: `LightBackground` 원형 배경, 텍스트는 `LightPrimary` 색상 Bold.
-* **하단 인디케이터**: 당일 할 일/일정 카테고리에 맞춰 작은 닷(`4.dp` 원형) 표시.
+* **월간 뷰 선택 상태**: `LightPrimary` 색상 기반의 가로 그라데이션 원형 배경 (`30.dp` 크기), 텍스트는 흰색(`Color.White`) Bold.
+* **주간 뷰 선택 상태**: Slate Blue ~ Royal Purple 그라데이션이 적용된 **세로형 캡슐(Vertical Capsule, `32.dp x 48.dp`, `RoundedCornerShape(16.dp)`)** 배경, 텍스트는 흰색 Bold.
+* **오늘 날짜**: `LightBackground` 원형 또는 캡슐형 배경, 텍스트는 `LightPrimary` 색상 Bold.
+* **하단 인디케이터**: 당일 할 일/일정 카테고리에 맞춰 가로로 긴 **둥근 미니 바(Bar) 형태의 칩** (`12.dp x 3.dp`, `RoundedCornerShape(1.5.dp)`) 배치.
+
+### 4.5 Calendar Header (달력 헤더)
+* **드롭다운형 헤더**: 달력 연/월 표시부 옆에 콤보 지시자인 하향 화살표(`Icons.Default.ExpandMore`) 아이콘을 배치하여, 직관적이고 세련된 날짜 선택 룩(UI Reference 스타일)을 부여한다.
 
 ### 4.5 TimePicker Dialog (시간 선택 다이얼로그)
 * 일정(SCHEDULE) 등록/수정 시 시간 지정을 위해 플로팅되는 다이얼로그.

@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -76,8 +77,8 @@ fun CalendarPane(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = if (isExpanded) Modifier.fillMaxSize().padding(12.dp)
-                       else Modifier.wrapContentHeight().padding(12.dp)
+            modifier = if (isExpanded) Modifier.fillMaxSize().padding(8.dp)
+                       else Modifier.wrapContentHeight().padding(8.dp)
         ) {
             // View Mode Selector + Expand/Collapse Button
             Row(
@@ -97,7 +98,7 @@ fun CalendarPane(
                         }
                     }
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 IconButton(
                     onClick = onToggleExpand,
                     modifier = Modifier.size(40.dp)
@@ -111,7 +112,7 @@ fun CalendarPane(
             }
 
             if (isExpanded) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Calendar Navigation
                 Row(
@@ -137,12 +138,23 @@ fun CalendarPane(
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Prev")
                     }
 
-                    Text(
-                        formattedHeader,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            formattedHeader,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = "Select Date",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
 
                     IconButton(
                         onClick = {
@@ -157,7 +169,7 @@ fun CalendarPane(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Grid Headers (Days of week)
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -167,13 +179,13 @@ fun CalendarPane(
                             text = it,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (it == "일") Color.Red else MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Box(
                     modifier = Modifier
@@ -411,25 +423,35 @@ fun DateCell(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(vertical = 2.dp, horizontal = 2.dp)
+            modifier = Modifier.padding(vertical = 1.dp, horizontal = 1.dp)
         ) {
-            // Date Circle
+            // Date Circle or Capsule based on viewMode
+            val isWeekMode = state.viewMode == CalendarViewMode.WEEK
+            val cellSizeModifier = if (isWeekMode) Modifier.size(width = 32.dp, height = 48.dp) else Modifier.size(26.dp)
+            val cellShape = if (isWeekMode) RoundedCornerShape(16.dp) else CircleShape
+
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            isSelected -> primary
-                            isToday    -> MaterialTheme.colorScheme.surfaceVariant
-                            else       -> Color.Transparent
+                    .then(cellSizeModifier)
+                    .clip(cellShape)
+                    .let {
+                        if (isSelected) {
+                            it.background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(LightPrimary, Color(0xFF6366F1))
+                                )
+                            )
+                        } else if (isToday) {
+                            it.background(MaterialTheme.colorScheme.surfaceVariant)
+                        } else {
+                            it
                         }
-                    ),
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = date.dayOfMonth.toString(),
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
                     color = when {
                         isSelected -> Color.White
@@ -439,27 +461,29 @@ fun DateCell(
                 )
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(1.dp))
 
-            // Category Indicator Dots
+            // Category Indicator Bars
             Row(
-                modifier = Modifier.height(4.dp),
+                modifier = Modifier.height(2.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (dayItems.any { it.category == CategoryType.WORK }) {
                     Box(
                         modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
+                            .width(10.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
                             .background(WorkPrimaryColor)
                     )
                 }
                 if (dayItems.any { it.category == CategoryType.PERSONAL }) {
                     Box(
                         modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
+                            .width(10.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
                             .background(PersonalPrimaryColor)
                     )
                 }
@@ -472,7 +496,7 @@ fun DateCell(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 2.dp, end = 2.dp)
-                    .size(8.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(SuccessWorkoutColor)
             )

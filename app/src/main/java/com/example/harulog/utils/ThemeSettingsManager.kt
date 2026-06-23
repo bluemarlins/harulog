@@ -19,6 +19,7 @@ class ThemeSettingsManager @Inject constructor(
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
 
+    // ── 테마 모드 ──────────────────────────────────────────────────────────────
     private val _themeMode = MutableStateFlow(loadThemeMode())
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
@@ -34,5 +35,15 @@ class ThemeSettingsManager @Inject constructor(
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString("theme_mode", mode.name).apply()
         _themeMode.value = mode
+    }
+
+    // ── 월급날 설정 (1~31일, 기본 21일) ──────────────────────────────────────
+    private val _salaryDay = MutableStateFlow(prefs.getInt("salary_day", 21))
+    val salaryDay: StateFlow<Int> = _salaryDay.asStateFlow()
+
+    fun setSalaryDay(day: Int) {
+        val clamped = day.coerceIn(1, 31)
+        prefs.edit().putInt("salary_day", clamped).apply()
+        _salaryDay.value = clamped
     }
 }

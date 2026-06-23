@@ -1,5 +1,6 @@
 package com.example.harulog.ui.diary
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,7 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.res.painterResource
+import com.example.harulog.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.onFocusChanged
 import com.example.harulog.ui.theme.GrayBorderColor
+import com.example.harulog.ui.theme.LightPrimary
+import com.example.harulog.ui.theme.DarkBackground
+import com.example.harulog.ui.theme.DarkBorderColor
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -55,6 +63,9 @@ fun DiaryPane(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    var isFocused by remember { mutableStateOf(false) }
 
     val displayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd (E)", Locale.KOREAN)
 
@@ -125,7 +136,7 @@ fun DiaryPane(
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                painter = painterResource(R.drawable.ic_trash_regular),
                                 contentDescription = "기록 삭제",
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp)
@@ -176,17 +187,34 @@ fun DiaryPane(
             }
 
             // ── 텍스트 입력 영역 ─────────────────────────────────────────
+            val textBorderModifier = if (isFocused) {
+                Modifier.border(
+                    width = 1.5.dp,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(LightPrimary, Color(0xFF6366F1))
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
+            } else {
+                Modifier.border(
+                    width = 1.5.dp,
+                    color = if (isDark) DarkBorderColor else GrayBorderColor,
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
             OutlinedTextField(
                 value          = text,
                 onValueChange  = { text = it },
                 placeholder    = { Text("오늘 일어났던 일이나 느낀 감정을 기록하세요...") },
                 modifier       = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused }
+                    .then(textBorderModifier),
                 shape  = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor   = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = GrayBorderColor
+                    focusedBorderColor   = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
                 )
             )
 
@@ -206,9 +234,28 @@ fun DiaryPane(
                                 onSaveDiary(text)
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (state.currentDiary != null) "수정 완료" else "기록 저장")
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(LightPrimary, Color(0xFF6366F1))
+                                    ),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (state.currentDiary != null) "수정 완료" else "기록 저장",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }

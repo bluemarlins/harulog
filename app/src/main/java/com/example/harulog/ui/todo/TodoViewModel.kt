@@ -9,6 +9,7 @@ import com.example.harulog.data.local.entity.ExerciseStickerEntity
 import com.example.harulog.data.repository.DataRepository
 import com.example.harulog.data.repository.DataBackupDto
 import com.example.harulog.utils.SelectedDateManager
+import com.example.harulog.utils.ThemeSettingsManager
 import com.example.harulog.ui.calendar.CalendarViewMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -50,13 +51,21 @@ data class MonthlyDashboardSummary(
     val annualLeaveDates: List<LocalDate> = emptyList(),
     val longestScheduleTitle: String? = null,
     val longestSchedulePeriodText: String? = null,
-    val longestScheduleDuration: Int = 0
+    val longestScheduleDuration: Int = 0,
+    // 신규 필드
+    val completedTodoCount: Int = 0,
+    val totalTodoCount: Int = 0,
+    val mostFrequentScheduleTitle: String? = null,
+    val mostFrequentScheduleCount: Int = 0,
+    val totalScheduleCount: Int = 0,
+    val salaryDayDiff: Int = 0   // 월급날(21일)까지 남은 일수, 음수=지남
 )
 
 @HiltViewModel
 class TodoViewModel @Inject constructor(
     private val repository: DataRepository,
     private val selectedDateManager: SelectedDateManager,
+    private val themeSettingsManager: ThemeSettingsManager,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
@@ -354,6 +363,43 @@ class TodoViewModel @Inject constructor(
                 }
             }
 
+            // 4. 이번 달 완료/전체 할일 수 계산
+            val monthTodos = schedules.filter {
+                it.isTodo && it.eventDate.year == yearMonth.year && it.eventDate.month == yearMonth.month
+            }
+            val completedTodoCount = monthTodos.count { it.isCompleted }
+            val totalTodoCount = monthTodos.size
+
+            // 5. 가장 많이 반복된 일정 타이틀
+            val freqMap = monthSchedules.groupBy { it.title.trim() }
+                .mapValues { (_, list) -> list.map { it.eventDate }.distinct().size }
+            val mostFrequent = freqMap.maxByOrNull { it.value }
+            val mostFreqTitle = mostFrequent?.key
+            val mostFreqCount = mostFrequent?.value ?: 0
+
+            Pair(
+                Triple(workoutCount, motivation, Pair(leaveCount, leaveDates)),
+                Triple(
+                    Triple(longestTitle, periodText, maxDuration),
+                    Triple(completedTodoCount, totalTodoCount, Pair(mostFreqTitle, mostFreqCount)),
+                    monthSchedules.map { it.eventDate }.distinct().size
+                )
+            )
+        }.combine(themeSettingsManager.salaryDay) { data, salaryDayOfMonth ->
+            val (part1, part2) = data
+            val (workoutCount, motivation, leavePair) = part1
+            val (leaveCount, leaveDates) = leavePair
+            val (longestPart, todoPart, totalScheduleCount) = part2
+            val (longestTitle, periodText, maxDuration) = longestPart
+            val (completedTodoCount, totalTodoCount, freqPair) = todoPart
+            val (mostFreqTitle, mostFreqCount) = freqPair
+
+            // 6. 월급날 D-Day (설정된 일수 기준)
+            val today = LocalDate.now()
+            val clampedDay = salaryDayOfMonth.coerceIn(1, yearMonth.lengthOfMonth())
+            val salaryDate = java.time.LocalDate.of(yearMonth.year, yearMonth.month, clampedDay)
+            val salaryDiff = java.time.temporal.ChronoUnit.DAYS.between(today, salaryDate).toInt()
+
             MonthlyDashboardSummary(
                 totalWorkoutCount = workoutCount,
                 workoutMotivationMessage = motivation,
@@ -361,7 +407,13 @@ class TodoViewModel @Inject constructor(
                 annualLeaveDates = leaveDates,
                 longestScheduleTitle = longestTitle,
                 longestSchedulePeriodText = periodText,
-                longestScheduleDuration = maxDuration
+                longestScheduleDuration = maxDuration,
+                completedTodoCount = completedTodoCount,
+                totalTodoCount = totalTodoCount,
+                mostFrequentScheduleTitle = mostFreqTitle,
+                mostFrequentScheduleCount = mostFreqCount,
+                totalScheduleCount = totalScheduleCount,
+                salaryDayDiff = salaryDiff
             )
         }
     }

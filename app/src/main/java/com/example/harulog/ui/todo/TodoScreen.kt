@@ -17,9 +17,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -88,7 +90,9 @@ fun DashboardPane(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "일정 & 할일",
                         fontSize = 16.sp,
@@ -96,7 +100,7 @@ fun DashboardPane(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     if (state.dateRangeText.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = state.dateRangeText,
                             fontSize = 12.sp,
@@ -105,11 +109,18 @@ fun DashboardPane(
                     }
                 }
 
-                IconButton(
-                    onClick = { isAddDialogOpen = true },
+                Box(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(LightPrimary, Color(0xFF6366F1))
+                            ),
+                            CircleShape
+                        )
                         .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable { isAddDialogOpen = true },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Add,
@@ -517,6 +528,10 @@ fun AddEditItemDialog(
     // 어떤 시간 선택기를 열지 ("start" | "end" | null)
     var timePickerTarget by remember { mutableStateOf<String?>(null) }
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    var isTitleFocused by remember { mutableStateOf(false) }
+    var isContentFocused by remember { mutableStateOf(false) }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -547,22 +562,66 @@ fun AddEditItemDialog(
                 )
 
                 // Title Input
+                val titleBorderModifier = if (isTitleFocused) {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(LightPrimary, Color(0xFF6366F1))
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                } else {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = if (isDark) DarkBorderColor else GrayBorderColor,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("제목을 입력하세요") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { isTitleFocused = it.isFocused }
+                        .then(titleBorderModifier),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 )
 
                 // Content Input
+                val contentBorderModifier = if (isContentFocused) {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(LightPrimary, Color(0xFF6366F1))
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                } else {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = if (isDark) DarkBorderColor else GrayBorderColor,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
                     label = { Text("내용을 입력하세요 (선택 사항)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    maxLines = 3
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { isContentFocused = it.isFocused }
+                        .then(contentBorderModifier),
+                    shape = RoundedCornerShape(16.dp),
+                    maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 )
 
                 // Category Selection (WORK or PERSONAL)
@@ -714,9 +773,28 @@ fun AddEditItemDialog(
                                 }
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (editingItem != null) "저장" else "생성")
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(LightPrimary, Color(0xFF6366F1))
+                                    ),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (editingItem != null) "저장" else "생성",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }

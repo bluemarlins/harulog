@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <!-- lid handle -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M216,48H176V36A20,20 0,0 0,156 16H100A20,20 0,0 0,80 36V48H40a8,8 0,0 0,0 16H56V208a16,16 0,0 0,16 16H184a16,16 0,0 0,16 -16V64H216a8,8 0,0 0,0 -16ZM96,36a4,4 0,0 1,4 -4H156a4,4 0,0 1,4 4V48H96ZM184,208H72V64H184ZM112,104v64a8,8 0,0 1,-16 0V104a8,8 0,0 1,16 0Zm48,0v64a8,8 0,0 1,-16 0V104a8,8 0,0 1,16 0Z"/>
+</vector>
