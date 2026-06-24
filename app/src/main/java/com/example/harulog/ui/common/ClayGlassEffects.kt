@@ -340,23 +340,28 @@ fun BoxWithConstraintsScope.LiquidIndicator(
         label = "LiquidIndicatorAnim"
     )
     
+    // 인디케이터 컬러 알파 강화를 통해 유리 쉴드 위에서도 존재감 확보
     val indicatorColor = if (isDarkTheme) {
-        Color(0xFF7E5EFF).copy(alpha = 0.20f)
+        Color(0xFF7E5EFF).copy(alpha = 0.55f) // 다크 모드 맑은 보라색
     } else {
-        Color(0xFF5E8BFF).copy(alpha = 0.22f)
+        Color(0xFF5E8BFF).copy(alpha = 0.60f) // 라이트 모드 선명한 하늘색
     }
     
-    val indicatorBrush = remember(animatingX, targetX, isDarkTheme) {
+    val radiusPx = with(density) { 16.dp.toPx() }
+    val halfW = (tabWidthPx * 0.80f) / 2f
+    val halfH = (heightPx * 0.78f) / 2f
+
+    // remember 키에서 animatingX를 제외하여 매 프레임 브러시 재생성을 방지하고 애니메이션 성능 랙 완벽 차단
+    val indicatorBrush = remember(targetX, isDarkTheme) {
         object : ShaderBrush() {
             override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader {
                 val centerY = size.height / 2f
+                // animatingX는 Compose State이므로 매 프레임 그리기 페이즈만 무효화(Invalidate)시켜 렌더링함
                 liquidShader.setFloatUniform("uCenter1", animatingX, centerY)
                 liquidShader.setFloatUniform("uCenter2", targetX, centerY)
                 
-                val halfW = (tabWidthPx * 0.80f) / 2f
-                val halfH = (heightPx * 0.78f) / 2f
                 liquidShader.setFloatUniform("uHalfSize", halfW, halfH)
-                liquidShader.setFloatUniform("uRadius", with(density) { 16.dp.toPx() })
+                liquidShader.setFloatUniform("uRadius", radiusPx)
                 
                 liquidShader.setFloatUniform(
                     "uColor",
