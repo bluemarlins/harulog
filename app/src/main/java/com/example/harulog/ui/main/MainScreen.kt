@@ -72,6 +72,7 @@ import java.io.InputStreamReader
 
 import com.example.harulog.ui.common.clayGlassBackground
 import com.example.harulog.ui.common.LiquidIndicator
+import com.example.harulog.ui.common.ClayGlassBox
 
 private data class TabItem(
     val index: Int,
@@ -391,12 +392,12 @@ internal fun MainContent(
                 // ── Apple Liquid Glass Bottom Navigation Bar ──────────────────
                 val isDarkTheme = MaterialTheme.colorScheme.background == DarkBackground
 
-                Box(
+                ClayGlassBox(
+                    isDarkTheme = isDarkTheme,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
-                        .clayGlassBackground(isDarkTheme = isDarkTheme)
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {

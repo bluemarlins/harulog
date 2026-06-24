@@ -12,11 +12,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -113,7 +116,7 @@ private const val LIQUID_SHADER_SRC = """
 """
 
 /**
- * Neumorphism 2중 그림자 및 AGSL 입체 Glassmorphism 셰이더와 그라데이션 보더를 결합하여
+ * Neumorphism 2중 그림자, 좌상단 화이트 글로우 및 AGSL 입체 Glassmorphism 셰이더와 그라데이션 보더를 결합하여
  * 대상을 프리미엄 Clay-Glass 스타일 배경으로 만드는 커스텀 Modifier입니다.
  */
 @Composable
@@ -122,6 +125,7 @@ fun Modifier.clayGlassBackground(
     cornerRadius: Dp = 24.dp,
     blurRadius: Float = 25f
 ): Modifier {
+    val density = LocalDensity.current
     val glassShader = remember { RuntimeShader(GLASS_SHADER_SRC) }
     
     val blurEffect = remember(blurRadius) {
@@ -170,7 +174,29 @@ fun Modifier.clayGlassBackground(
         )
     }
 
+    val cornerRadiusPx = with(density) { cornerRadius.toPx() }
+    val whiteGlowColor = android.graphics.Color.argb(160, 255, 255, 255)
+
     return this
+        // 1. 좌상단 화이트 글로우 (White Neumorphic Glow)
+        .drawBehind {
+            val paint = android.graphics.Paint().apply {
+                color = android.graphics.Color.WHITE
+                setShadowLayer(
+                    20f,
+                    -5f, -5f,
+                    whiteGlowColor
+                )
+            }
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawRoundRect(
+                    0f, 0f, size.width, size.height,
+                    cornerRadiusPx, cornerRadiusPx,
+                    paint
+                )
+            }
+        }
+        // 2. 우하단 어두운 Neumorphic 소프트 섀도우 레이어 2종
         .shadow(
             elevation = 16.dp,
             shape = RoundedCornerShape(cornerRadius),
@@ -185,16 +211,52 @@ fun Modifier.clayGlassBackground(
             ambientColor = Color.Black.copy(alpha = 0.18f),
             spotColor = Color.Black.copy(alpha = 0.18f)
         )
+        // 3. 실시간 배경 흐림 레이어
         .graphicsLayer {
             renderEffect = blurEffect
         }
         .clip(RoundedCornerShape(cornerRadius))
+        // 4. 3D 유리 광택 셰이더 및 그라데이션 보더
         .background(glassBrush)
         .border(
             width = 0.8.dp,
             brush = borderBrush,
             shape = RoundedCornerShape(cornerRadius)
         )
+}
+
+/**
+ * 배경 흐림 이펙트가 자식 콘텐츠(Text, Icons 등)까지 침범하지 않도록,
+ * 배경 블러 레이어와 콘텐츠 노출 레이어를 완전히 격리하여 시인성을 보호하는 컨테이너 컴포저블입니다.
+ */
+@Composable
+fun ClayGlassBox(
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 24.dp,
+    blurRadius: Float = 25f,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = modifier
+    ) {
+        // [Layer 1] 순수 배경 블러 및 유리 셰이더 레이어 (자식이 없으므로 텍스트 영향 없음)
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clayGlassBackground(
+                    isDarkTheme = isDarkTheme,
+                    cornerRadius = cornerRadius,
+                    blurRadius = blurRadius
+                )
+        )
+        
+        // [Layer 2] 선명함을 100% 보존해야 하는 상위 텍스트/상호작용 콘텐츠 레이어
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            content = content
+        )
+    }
 }
 
 /**
