@@ -354,18 +354,98 @@ private fun MonthCalligraphyHeader(month: YearMonth) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DashboardMetricCard — 공통 템플릿 카드 컴포넌트
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun DashboardMetricCard(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueSuffix: String? = null,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    icon: ImageVector? = null,
+    subtext: String? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null
+) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .border(1.dp, borderColor, MaterialTheme.shapes.medium),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Text(
+                    text = title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+            }
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = accentColor
+                )
+                if (valueSuffix != null) {
+                    Text(
+                        text = valueSuffix,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+            }
+
+            if (content != null) {
+                content()
+            } else if (subtext != null) {
+                Text(
+                    text = subtext,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SalaryDayCard — 월급날 D-Day
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun SalaryDayCard(diff: Int) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val isToday = diff == 0
     val isPast  = diff < 0
-
-    val bgColor     = if (isDark) Color(0xFF1A2A3A) else Color(0xFFE8F4FD)
-    val borderColor = if (isDark) Color(0xFF264559) else Color(0xFFB3D9F5)
-    val tintColor   = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
 
     val label = when {
         isToday -> "오늘 💰"
@@ -378,36 +458,12 @@ private fun SalaryDayCard(diff: Int) {
         else    -> "${diff}일 후 월급날"
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            "월급날",
-            fontSize   = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color      = tintColor
-        )
-        Text(
-            label,
-            fontSize   = 28.sp,
-            fontWeight = FontWeight.Black,
-            color      = if (isToday) MaterialTheme.colorScheme.error else tintColor
-        )
-        Text(
-            subLabel,
-            fontSize  = 10.sp,
-            lineHeight= 14.sp,
-            color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-        )
-    }
+    DashboardMetricCard(
+        title = "월급날",
+        value = label,
+        accentColor = MaterialTheme.colorScheme.primary,
+        subtext = subLabel
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -416,51 +472,13 @@ private fun SalaryDayCard(diff: Int) {
 
 @Composable
 private fun WorkoutCountCard(count: Int, message: String) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
-    val bgColor     = if (isDark) Color(0xFF1B2E24) else Color(0xFFE8F5E9)
-    val borderColor = if (isDark) Color(0xFF2E4D3E) else Color(0xFFC8E6C9)
-    val tintColor   = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            "이달 운동",
-            fontSize   = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color      = tintColor
-        )
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                "$count",
-                fontSize   = 28.sp,
-                fontWeight = FontWeight.Black,
-                color      = tintColor
-            )
-            Text(
-                " 회",
-                fontSize  = 13.sp,
-                fontWeight= FontWeight.Medium,
-                color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier  = Modifier.padding(bottom = 4.dp)
-            )
-        }
-        Text(
-            message,
-            fontSize  = 10.sp,
-            lineHeight= 14.sp,
-            color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
-            maxLines  = 2
-        )
-    }
+    DashboardMetricCard(
+        title = "이달 운동",
+        value = "$count",
+        valueSuffix = " 회",
+        accentColor = SuccessWorkoutColor,
+        subtext = message
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -469,61 +487,52 @@ private fun WorkoutCountCard(count: Int, message: String) {
 
 @Composable
 private fun CompletedTodoCard(completed: Int, total: Int) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
-    val bgColor     = if (isDark) Color(0xFF2A1F3D) else Color(0xFFF3E5F5)
-    val borderColor = if (isDark) Color(0xFF4C3069) else Color(0xFFE1BEE7)
-    val tintColor   = if (isDark) Color(0xFFBA68C8) else Color(0xFF8E24AA)
-    val progress    = if (total > 0) completed.toFloat() / total.toFloat() else 0f
+    val progress = if (total > 0) completed.toFloat() / total.toFloat() else 0f
+    val accentColor = PersonalPrimaryColor
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    DashboardMetricCard(
+        title = "이달 완료",
+        value = "$completed",
+        valueSuffix = " / ${total}건",
+        accentColor = accentColor
     ) {
-        Text(
-            "이달 완료",
-            fontSize   = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color      = tintColor
-        )
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                "$completed",
-                fontSize   = 28.sp,
-                fontWeight = FontWeight.Black,
-                color      = tintColor
-            )
-            Text(
-                " / ${total}건",
-                fontSize  = 12.sp,
-                fontWeight= FontWeight.Medium,
-                color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier  = Modifier.padding(bottom = 4.dp)
-            )
-        }
-        // 진행률 바
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(tintColor.copy(alpha = 0.2f))
+                .background(accentColor.copy(alpha = 0.2f))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(progress)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(2.dp))
-                    .background(tintColor)
+                    .background(accentColor)
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AnnualLeaveListCard — 이달 연차 사용 현황
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun AnnualLeaveListCard(count: Int, dates: List<LocalDate>) {
+    val datesText = if (dates.isEmpty()) {
+        "사용 내역이 없습니다."
+    } else {
+        dates.joinToString(", ") { "${it.monthValue}/${it.dayOfMonth}" }
+    }
+
+    DashboardMetricCard(
+        title = "연차 사용",
+        value = "$count",
+        valueSuffix = " 회 사용",
+        accentColor = WorkPrimaryColor,
+        subtext = datesText
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -545,10 +554,9 @@ private fun MonthlyScheduleSummaryCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, MaterialTheme.shapes.medium)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -663,8 +671,8 @@ private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
                     modifier = Modifier
                         .matchParentSize()
                         .padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                        .background(bgColor.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
                 )
             }
             // Middle stacked card background
@@ -672,8 +680,8 @@ private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
                 modifier = Modifier
                     .matchParentSize()
                     .padding(top = 4.dp, start = 4.dp, end = 4.dp)
-                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
-                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+                    .background(bgColor.copy(alpha = 0.8f), MaterialTheme.shapes.medium)
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), MaterialTheme.shapes.medium)
             )
         }
 
@@ -681,10 +689,9 @@ private fun UrgentTodoCard(todo: MergedTodoScheduleItem) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = if (isMerged) 8.dp else 0.dp)
-                .shadow(2.dp, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(bgColor)
-                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                .border(1.dp, borderColor, MaterialTheme.shapes.medium)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -767,8 +774,8 @@ private fun WeekScheduleCard(schedule: MergedTodoScheduleItem, today: LocalDate)
                     modifier = Modifier
                         .matchParentSize()
                         .padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                        .background(bgColor.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .border(1.dp, borderColor.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .background(bgColor.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
+                        .border(1.dp, borderColor.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
                 )
             }
             // Middle stacked card background
@@ -776,8 +783,8 @@ private fun WeekScheduleCard(schedule: MergedTodoScheduleItem, today: LocalDate)
                 modifier = Modifier
                     .matchParentSize()
                     .padding(top = 4.dp, start = 4.dp, end = 4.dp)
-                    .background(bgColor.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
-                    .border(1.dp, borderColor.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+                    .background(bgColor.copy(alpha = 0.8f), MaterialTheme.shapes.medium)
+                    .border(1.dp, borderColor.copy(alpha = 0.8f), MaterialTheme.shapes.medium)
             )
         }
 
@@ -785,10 +792,9 @@ private fun WeekScheduleCard(schedule: MergedTodoScheduleItem, today: LocalDate)
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = if (isMerged) 8.dp else 0.dp)
-                .shadow(1.dp, RoundedCornerShape(14.dp))
-                .clip(RoundedCornerShape(14.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(bgColor)
-                .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+                .border(1.dp, borderColor, MaterialTheme.shapes.medium)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -859,232 +865,12 @@ private fun EmptyStateCard(message: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, RoundedCornerShape(14.dp))
+            .border(1.dp, if (isDark) DarkBorderColor else GrayBorderColor, MaterialTheme.shapes.medium)
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(message, fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
-    }
-}
-
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 추가된 한달 요약 리포트 카드 컴포넌트
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun WorkoutMotivationCard(count: Int, message: String) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
-    
-    val bgColor = if (isDark) Color(0xFF1B2E24) else Color(0xFFE8F5E9)
-    val borderColor = if (isDark) Color(0xFF2E4D3E) else Color(0xFFC8E6C9)
-    val tintColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                Icons.Outlined.Star,
-                contentDescription = null,
-                tint = tintColor,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                "운동",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor
-            )
-        }
-        
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    "$count",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = tintColor
-                )
-                Text(
-                    " 회 완료",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = onSurfaceColor.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-            Text(
-                message,
-                fontSize = 10.sp,
-                lineHeight = 14.sp,
-                color = onSurfaceColor.copy(alpha = 0.7f),
-                maxLines = 3
-            )
-        }
-    }
-}
-
-@Composable
-private fun AnnualLeaveListCard(count: Int, dates: List<LocalDate>) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
-    
-    val bgColor = if (isDark) Color(0xFF1E2838) else Color(0xFFE3F2FD)
-    val borderColor = if (isDark) Color(0xFF2C3E56) else Color(0xFFBBDEFB)
-    val tintColor = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-
-    val datesText = if (dates.isEmpty()) {
-        "사용 내역이 없습니다."
-    } else {
-        dates.joinToString(", ") { "${it.monthValue}/${it.dayOfMonth}" }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .shadow(1.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                Icons.Outlined.Info,
-                contentDescription = null,
-                tint = tintColor,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                "연차 사용",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor
-            )
-        }
-        
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    "$count",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = tintColor
-                )
-                Text(
-                    " 회 사용",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = onSurfaceColor.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-            Text(
-                datesText,
-                fontSize = 10.sp,
-                lineHeight = 14.sp,
-                color = onSurfaceColor.copy(alpha = 0.7f),
-                maxLines = 3
-            )
-        }
-    }
-}
-
-@Composable
-private fun LongestScheduleHighlightCard(
-    title: String,
-    duration: Int,
-    periodText: String
-) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBackground
-    
-    val bgColor = if (isDark) Color(0xFF2D1F3D) else Color(0xFFF3E5F5)
-    val borderColor = if (isDark) Color(0xFF4C3069) else Color(0xFFE1BEE7)
-    val tintColor = if (isDark) Color(0xFFBA68C8) else Color(0xFF8E24AA)
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(18.dp))
-            .clip(RoundedCornerShape(18.dp))
-            .background(bgColor)
-            .border(1.5.dp, borderColor, RoundedCornerShape(18.dp))
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(tintColor.copy(alpha = 0.2f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Outlined.Star,
-                contentDescription = null,
-                tint = tintColor,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    "가장 긴 일정 하이라이트",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = tintColor
-                )
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = tintColor.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        "${duration}일 연속",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = tintColor,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-            Text(
-                title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = onSurfaceColor
-            )
-            Text(
-                "$periodText ($duration 일간)",
-                fontSize = 12.sp,
-                color = onSurfaceColor.copy(alpha = 0.8f)
-            )
-        }
     }
 }

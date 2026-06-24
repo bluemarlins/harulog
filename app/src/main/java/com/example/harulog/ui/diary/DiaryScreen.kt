@@ -4,7 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -28,6 +31,7 @@ import com.example.harulog.ui.theme.DarkBackground
 import com.example.harulog.ui.theme.DarkBorderColor
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -72,6 +76,7 @@ fun DiaryPane(
     if (showDatePicker) {
         DiaryDatePickerDialog(
             initialDate = state.selectedDate,
+            allDiaryDates = state.allDiaryDates,
             onDismiss = { showDatePicker = false },
             onConfirm = onSelectDate
         )
@@ -265,44 +270,145 @@ fun DiaryPane(
     }
 }
 
-// ── M3 DatePickerDialog ───────────────────────────────────────────────
-@OptIn(ExperimentalMaterial3Api::class)
+// ── Custom DatePickerDialog (Shows dots for diary entry dates) ─────────
 @Composable
 fun DiaryDatePickerDialog(
     initialDate: LocalDate,
+    allDiaryDates: List<LocalDate>,
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit
 ) {
-    val initialMillis = remember(initialDate) {
-        initialDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-    }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialMillis
-    )
+    var currentMonth by remember { mutableStateOf(YearMonth.from(initialDate)) }
 
-    DatePickerDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val selectedDate = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneOffset.UTC)
-                            .toLocalDate()
-                        onConfirm(selectedDate)
-                    }
-                    onDismiss()
-                }
-            ) {
-                Text("선택")
-            }
-        },
+        shape = RoundedCornerShape(24.dp),
+        confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("취소")
             }
+        },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "이전 달"
+                    )
+                }
+                Text(
+                    text = currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN)),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "다음 달"
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 요일 헤더
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    val days = listOf("일", "월", "화", "수", "목", "금", "토")
+                    days.forEach { day ->
+                        Text(
+                            text = day,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (day == "일") Color.Red else MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+
+                // 날짜 그리드
+                val firstDay = currentMonth.atDay(1)
+                val dayOfWeek = firstDay.dayOfWeek.value % 7 // 0 = Sunday, 1 = Monday, ...
+                val daysInMonth = currentMonth.lengthOfMonth()
+
+                val totalCells = ((dayOfWeek + daysInMonth + 6) / 7) * 7
+                val dates = ArrayList<LocalDate?>(totalCells)
+                for (i in 0 until dayOfWeek) dates.add(null)
+                for (i in 1..daysInMonth) dates.add(currentMonth.atDay(i))
+                while (dates.size < totalCells) dates.add(null)
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val rows = totalCells / 7
+                    for (row in 0 until rows) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            for (col in 0 until 7) {
+                                val date = dates[row * 7 + col]
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (date != null) {
+                                        val isSelected = date == initialDate
+                                        val hasDiary = allDiaryDates.contains(date)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else Color.Transparent
+                                                )
+                                                .clickable {
+                                                    onConfirm(date)
+                                                    onDismiss()
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = date.dayOfMonth.toString(),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    color = if (isSelected) Color.White
+                                                    else if (col == 0) Color.Red
+                                                    else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                if (hasDiary) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(4.dp)
+                                                            .clip(CircleShape)
+                                                            .background(
+                                                                if (isSelected) Color.White
+                                                                else MaterialTheme.colorScheme.primary
+                                                            )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-    ) {
-        DatePicker(state = datePickerState)
-    }
+    )
 }

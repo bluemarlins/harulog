@@ -37,8 +37,11 @@ class UserScenarioTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = UserScenarioFakeDataRepository()
-        calendarViewModel = CalendarViewModel(fakeRepository, dateManager)
-        todoViewModel = TodoViewModel(fakeRepository, dateManager)
+        val themeSettingsManager = org.mockito.Mockito.mock(com.example.harulog.utils.ThemeSettingsManager::class.java)
+        org.mockito.Mockito.`when`(themeSettingsManager.themeMode).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(com.example.harulog.utils.ThemeMode.SYSTEM))
+        org.mockito.Mockito.`when`(themeSettingsManager.salaryDay).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(21))
+        calendarViewModel = CalendarViewModel(fakeRepository, dateManager, themeSettingsManager)
+        todoViewModel = TodoViewModel(fakeRepository, dateManager, themeSettingsManager)
     }
 
     @After

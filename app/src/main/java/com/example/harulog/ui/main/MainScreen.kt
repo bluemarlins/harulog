@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
@@ -285,29 +288,13 @@ internal fun MainContent(
                                     )
                                 }
                                 else -> {
-                                    Column(
-                                        modifier = Modifier
-                                            .widthIn(max = 600.dp)
-                                            .fillMaxHeight()
-                                            .padding(vertical = 16.dp),
-                                        verticalArrangement   = Arrangement.spacedBy(16.dp),
-                                        horizontalAlignment   = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            "설정 및 백업",
-                                            fontSize   = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color      = MaterialTheme.colorScheme.onBackground,
-                                            modifier   = Modifier.padding(bottom = 8.dp)
-                                        )
-                                        ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
-                                        SalaryDaySettingsCard(themeSettingsManager = themeSettingsManager)
-                                        DebugDataSettingsCard(todoViewModel = todoViewModel)
-                                        BackupRestoreCard(
-                                            onExportBackup = onExportBackup,
-                                            onImportBackup = onImportBackup
-                                        )
-                                    }
+                                    SettingsScreen(
+                                        themeSettingsManager = themeSettingsManager,
+                                        todoViewModel = todoViewModel,
+                                        onExportBackup = onExportBackup,
+                                        onImportBackup = onImportBackup,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
                                 }
                             }
                         }
@@ -369,26 +356,13 @@ internal fun MainContent(
                             }
                             // 3: 설정
                             3 -> {
-                                Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement   = Arrangement.spacedBy(16.dp),
-                                    horizontalAlignment   = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        "설정 및 백업",
-                                        fontSize   = 20.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color      = MaterialTheme.colorScheme.onBackground,
-                                        modifier   = Modifier.padding(bottom = 8.dp)
-                                    )
-                                    ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
-                                    SalaryDaySettingsCard(themeSettingsManager = themeSettingsManager)
-                                    DebugDataSettingsCard(todoViewModel = todoViewModel)
-                                    BackupRestoreCard(
-                                        onExportBackup = onExportBackup,
-                                        onImportBackup = onImportBackup
-                                    )
-                                }
+                                SettingsScreen(
+                                    themeSettingsManager = themeSettingsManager,
+                                    todoViewModel = todoViewModel,
+                                    onExportBackup = onExportBackup,
+                                    onImportBackup = onImportBackup,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
                     }
@@ -542,105 +516,109 @@ private fun ThemeSettingsCard(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SalaryDaySettingsCard(themeSettingsManager: ThemeSettingsManager) {
+private fun SalaryDaySettingsCard(
+    themeSettingsManager: ThemeSettingsManager,
+    modifier: Modifier = Modifier
+) {
     val isDark       = MaterialTheme.colorScheme.background == DarkBackground
     val borderColor  = if (isDark) DarkBorderColor else GrayBorderColor
     val currentDay   by themeSettingsManager.salaryDay.collectAsStateWithLifecycle()
 
     val lazyListState = rememberLazyListState()
-    val configuration = LocalConfiguration.current
     val density       = LocalDensity.current
 
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidthDp   = if (screenWidthDp > 600) 600 else screenWidthDp
-    val lazyRowWidthDp = cardWidthDp - 32 // 16.dp horizontal padding * 2
-
-    // 가로 스크롤 칩들의 중앙 정렬을 위한 offset 계산 (px)
-    // (LazyRow 전체 가용 가로 폭의 절반) - (아이템의 크기 36dp의 절반)
-    val scrollOffsetPx = with(density) {
-        -((lazyRowWidthDp / 2) - 18).dp.toPx().toInt()
-    }
-
-    var isInitialized by remember { mutableStateOf(false) }
-
-    LaunchedEffect(currentDay) {
-        val targetIndex = currentDay - 1
-        if (targetIndex in 0..30) {
-            if (!isInitialized) {
-                lazyListState.scrollToItem(targetIndex, scrollOffsetPx)
-                isInitialized = true
-            } else {
-                lazyListState.animateScrollToItem(targetIndex, scrollOffsetPx)
-            }
-        }
-    }
-
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
         colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border   = BorderStroke(1.dp, borderColor)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 헤더
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = null,
-                    tint     = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Column {
-                    Text(
-                        "월급날 설정",
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 15.sp,
-                        color      = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        "매달 ${currentDay}일에 월급을 받아요",
-                        fontSize = 12.sp,
-                        color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+        BoxWithConstraints {
+            val cardWidthDp = maxWidth
+            val lazyRowWidthDp = cardWidthDp - 32.dp // 16.dp horizontal padding * 2
+
+            // 가로 스크롤 칩들의 중앙 정렬을 위한 offset 계산 (px)
+            // (LazyRow 전체 가용 가로 폭의 절반) - (아이템의 크기 36dp의 절반)
+            val scrollOffsetPx = with(density) {
+                -((lazyRowWidthDp / 2) - 18.dp).toPx().toInt()
+            }
+
+            var isInitialized by remember { mutableStateOf(false) }
+
+            LaunchedEffect(currentDay) {
+                val targetIndex = currentDay - 1
+                if (targetIndex in 0..30) {
+                    if (!isInitialized) {
+                        lazyListState.scrollToItem(targetIndex, scrollOffsetPx)
+                        isInitialized = true
+                    } else {
+                        lazyListState.animateScrollToItem(targetIndex, scrollOffsetPx)
+                    }
                 }
             }
 
-            // 날짜 선택 — 가로 스크롤 칩
-            LazyRow(
-                state                 = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding        = PaddingValues(horizontal = 2.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items((1..31).toList()) { day ->
-                    val selected = day == currentDay
-                    Surface(
-                        shape   = RoundedCornerShape(50),
-                        color   = if (selected)
-                                      MaterialTheme.colorScheme.primary
-                                  else
-                                      MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clickable { themeSettingsManager.setSalaryDay(day) }
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text       = day.toString(),
-                                fontSize   = 12.sp,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                color      = if (selected)
-                                                 MaterialTheme.colorScheme.onPrimary
-                                             else
-                                                 MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                // 헤더
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint     = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Column {
+                        Text(
+                            "월급날 설정",
+                            fontWeight = FontWeight.Bold,
+                            fontSize   = 15.sp,
+                            color      = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            "매달 ${currentDay}일에 월급을 받아요",
+                            fontSize = 12.sp,
+                            color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                // 날짜 선택 — 가로 스크롤 칩
+                LazyRow(
+                    state                 = lazyListState,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding        = PaddingValues(horizontal = 2.dp),
+                    modifier              = Modifier.fillMaxWidth()
+                ) {
+                    items((1..31).toList()) { day ->
+                        val selected = day == currentDay
+                        Surface(
+                            shape   = RoundedCornerShape(50),
+                            color   = if (selected)
+                                          MaterialTheme.colorScheme.primary
+                                      else
+                                          MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { themeSettingsManager.setSalaryDay(day) }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text       = day.toString(),
+                                    fontSize   = 12.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    color      = if (selected)
+                                                     MaterialTheme.colorScheme.onPrimary
+                                                 else
+                                                     MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -710,6 +688,59 @@ private fun DebugDataSettingsCard(
                     onCheckedChange = { todoViewModel.setDebugDataEnabled(it) }
                 )
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SettingsScreen
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SettingsScreen(
+    themeSettingsManager: ThemeSettingsManager,
+    todoViewModel: TodoViewModel,
+    onExportBackup: () -> Unit,
+    onImportBackup: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 300.dp),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "설정 및 백업",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+
+        item {
+            ThemeSettingsCard(themeSettingsManager = themeSettingsManager)
+        }
+        item {
+            SalaryDaySettingsCard(themeSettingsManager = themeSettingsManager)
+        }
+        item {
+            DebugDataSettingsCard(todoViewModel = todoViewModel)
+        }
+        item {
+            BackupRestoreCard(
+                onExportBackup = onExportBackup,
+                onImportBackup = onImportBackup
+            )
         }
     }
 }

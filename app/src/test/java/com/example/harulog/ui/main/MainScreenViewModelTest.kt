@@ -41,7 +41,10 @@ class MainScreenViewModelTest {
     @Test
     fun uiState_initiallyLoads() = runTest {
         val fakeRepository = FakeDataRepository()
-        val viewModel = TodoViewModel(fakeRepository, dateManager)
+        val themeSettingsManager = org.mockito.Mockito.mock(com.example.harulog.utils.ThemeSettingsManager::class.java)
+        org.mockito.Mockito.`when`(themeSettingsManager.themeMode).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(com.example.harulog.utils.ThemeMode.SYSTEM))
+        org.mockito.Mockito.`when`(themeSettingsManager.salaryDay).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(21))
+        val viewModel = TodoViewModel(fakeRepository, dateManager, themeSettingsManager)
         
         val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -55,7 +58,10 @@ class MainScreenViewModelTest {
     @Test
     fun uiState_addingTodo_updatesTodos() = runTest {
         val fakeRepository = FakeDataRepository()
-        val viewModel = TodoViewModel(fakeRepository, dateManager)
+        val themeSettingsManager = org.mockito.Mockito.mock(com.example.harulog.utils.ThemeSettingsManager::class.java)
+        org.mockito.Mockito.`when`(themeSettingsManager.themeMode).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(com.example.harulog.utils.ThemeMode.SYSTEM))
+        org.mockito.Mockito.`when`(themeSettingsManager.salaryDay).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(21))
+        val viewModel = TodoViewModel(fakeRepository, dateManager, themeSettingsManager)
         
         val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -85,7 +91,10 @@ class MainScreenViewModelTest {
     @Test
     fun test_jsonBackupAndRestore() = runTest {
         val fakeRepository = FakeDataRepository()
-        val viewModel = TodoViewModel(fakeRepository, dateManager)
+        val themeSettingsManager = org.mockito.Mockito.mock(com.example.harulog.utils.ThemeSettingsManager::class.java)
+        org.mockito.Mockito.`when`(themeSettingsManager.themeMode).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(com.example.harulog.utils.ThemeMode.SYSTEM))
+        org.mockito.Mockito.`when`(themeSettingsManager.salaryDay).thenReturn(kotlinx.coroutines.flow.MutableStateFlow(21))
+        val viewModel = TodoViewModel(fakeRepository, dateManager, themeSettingsManager)
 
         val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
