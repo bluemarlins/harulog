@@ -137,7 +137,7 @@ fun Modifier.clayGlassBackground(
     val glassColor = if (isDarkTheme) {
         Color(0xFF1E1E1C).copy(alpha = 0.78f)
     } else {
-        Color(0xFFF9F9F6).copy(alpha = 0.85f)
+        Color(0xFFECF3FF).copy(alpha = 0.85f)
     }
     
     val glassBrush = remember(glassColor) {
@@ -168,7 +168,7 @@ fun Modifier.clayGlassBackground(
                 listOf(
                     Color.White.copy(alpha = 0.85f),
                     Color.White.copy(alpha = 0.20f),
-                    Color.Black.copy(alpha = 0.12f)
+                    Color.Black.copy(alpha = 0.26f)
                 )
             }
         )
@@ -196,20 +196,20 @@ fun Modifier.clayGlassBackground(
                 )
             }
         }
-        // 2. 우하단 어두운 Neumorphic 소프트 섀도우 레이어 2종
+        // 2. 우하단 어두운 Neumorphic 소프트 섀도우 레이어 2종 (라이트 모드 대비 강화)
         .shadow(
             elevation = 16.dp,
             shape = RoundedCornerShape(cornerRadius),
             clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.08f),
-            spotColor = Color.Black.copy(alpha = 0.08f)
+            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.08f else 0.13f),
+            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.08f else 0.13f)
         )
         .shadow(
             elevation = 6.dp,
             shape = RoundedCornerShape(cornerRadius),
             clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.18f),
-            spotColor = Color.Black.copy(alpha = 0.18f)
+            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.18f else 0.25f),
+            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.18f else 0.25f)
         )
         // 3. 실시간 배경 흐림 레이어
         .graphicsLayer {
