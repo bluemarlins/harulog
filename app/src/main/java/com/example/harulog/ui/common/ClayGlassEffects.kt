@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -39,23 +40,23 @@ private const val GLASS_SHADER_SRC = """
         float fresnel = pow(edgeFactor, 4.0) * 0.15;
         col.rgb += fresnel;
 
-        // 2. 3D Light Bevel Highlight (Top & Left)
+        // 2. 3D Light Bevel Highlight (Top & Left) - Extended to 6.0px for high-res screens
         float highlight = 0.0;
-        if (coord.y < 3.0 && coord.x < uSize.x - 3.0) {
-            highlight = (1.0 - (coord.y / 3.0)) * 0.45;
+        if (coord.y < 6.0 && coord.x < uSize.x - 6.0) {
+            highlight = (1.0 - (coord.y / 6.0)) * 0.50;
         }
-        if (coord.x < 3.0 && coord.y < uSize.y - 3.0) {
-            highlight += (1.0 - (coord.x / 3.0)) * 0.25;
+        if (coord.x < 6.0 && coord.y < uSize.y - 6.0) {
+            highlight += (1.0 - (coord.x / 6.0)) * 0.30;
         }
         col.rgb += highlight;
 
-        // 3. 3D Inner Bevel Shadow (Bottom & Right)
+        // 3. 3D Inner Bevel Shadow (Bottom & Right) - Extended to 6.0px
         float innerShadow = 0.0;
-        if (coord.y > uSize.y - 3.0) {
-            innerShadow = ((coord.y - (uSize.y - 3.0)) / 3.0) * 0.22;
+        if (coord.y > uSize.y - 6.0) {
+            innerShadow = ((coord.y - (uSize.y - 6.0)) / 6.0) * 0.25;
         }
-        if (coord.x > uSize.x - 3.0) {
-            innerShadow += ((coord.x - (uSize.x - 3.0)) / 3.0) * 0.15;
+        if (coord.x > uSize.x - 6.0) {
+            innerShadow += ((coord.x - (uSize.x - 6.0)) / 6.0) * 0.18;
         }
         col.rgb -= innerShadow;
 
@@ -116,76 +117,32 @@ private const val LIQUID_SHADER_SRC = """
 """
 
 /**
- * Neumorphism 2중 그림자, 좌상단 화이트 글로우 및 AGSL 입체 Glassmorphism 셰이더와 그라데이션 보더를 결합하여
- * 대상을 프리미엄 Clay-Glass 스타일 배경으로 만드는 커스텀 Modifier입니다.
+ * 1. Neumorphic 2중 그림자 및 좌상단 틴트 글로우 (Style.STROKE를 써서 내부 투명성 보존)
  */
-@Composable
-fun Modifier.clayGlassBackground(
+fun Modifier.clayGlassShadows(
     isDarkTheme: Boolean,
-    cornerRadius: Dp = 24.dp,
-    blurRadius: Float = 25f
-): Modifier {
+    cornerRadius: Dp = 24.dp
+): Modifier = composed {
     val density = LocalDensity.current
-    val glassShader = remember { RuntimeShader(GLASS_SHADER_SRC) }
-    
-    val blurEffect = remember(blurRadius) {
-        RenderEffect.createBlurEffect(
-            blurRadius, blurRadius, android.graphics.Shader.TileMode.DECAL
-        ).asComposeRenderEffect()
-    }
-    
-    val glassColor = if (isDarkTheme) {
-        Color(0xFF1E1E1C).copy(alpha = 0.78f)
-    } else {
-        Color(0xFFECF3FF).copy(alpha = 0.85f)
-    }
-    
-    val glassBrush = remember(glassColor) {
-        object : ShaderBrush() {
-            override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader {
-                glassShader.setFloatUniform("uSize", size.width, size.height)
-                glassShader.setFloatUniform(
-                    "uColor",
-                    glassColor.red,
-                    glassColor.green,
-                    glassColor.blue,
-                    glassColor.alpha
-                )
-                return glassShader
-            }
-        }
-    }
-
-    val borderBrush = remember(isDarkTheme) {
-        androidx.compose.ui.graphics.Brush.verticalGradient(
-            colors = if (isDarkTheme) {
-                listOf(
-                    Color.White.copy(alpha = 0.35f),
-                    Color.White.copy(alpha = 0.05f),
-                    Color.Black.copy(alpha = 0.20f)
-                )
-            } else {
-                listOf(
-                    Color.White.copy(alpha = 0.85f),
-                    Color.White.copy(alpha = 0.20f),
-                    Color.Black.copy(alpha = 0.26f)
-                )
-            }
-        )
-    }
-
     val cornerRadiusPx = with(density) { cornerRadius.toPx() }
-    val whiteGlowColor = android.graphics.Color.argb(160, 255, 255, 255)
+    
+    // 라이트 모드 화이트 배경에서도 유리의 굴절 반사광이 눈에 띄도록 스카이 블루 틴트 글로우 적용
+    val glowColor = if (isDarkTheme) {
+        android.graphics.Color.argb(160, 255, 255, 255)
+    } else {
+        android.graphics.Color.argb(220, 180, 215, 255)
+    }
 
-    return this
-        // 1. 좌상단 화이트 글로우 (White Neumorphic Glow)
+    this
         .drawBehind {
             val paint = android.graphics.Paint().apply {
-                color = android.graphics.Color.WHITE
+                color = if (isDarkTheme) android.graphics.Color.WHITE else android.graphics.Color.argb(230, 214, 233, 255)
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 2f
                 setShadowLayer(
-                    20f,
+                    28f,
                     -5f, -5f,
-                    whiteGlowColor
+                    glowColor
                 )
             }
             drawIntoCanvas { canvas ->
@@ -196,27 +153,101 @@ fun Modifier.clayGlassBackground(
                 )
             }
         }
-        // 2. 우하단 어두운 Neumorphic 소프트 섀도우 레이어 2종 (라이트 모드 대비 강화)
         .shadow(
-            elevation = 16.dp,
+            elevation = 14.dp,
             shape = RoundedCornerShape(cornerRadius),
             clip = false,
-            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.08f else 0.13f),
-            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.08f else 0.13f)
+            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.10f else 0.14f),
+            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.10f else 0.14f)
         )
         .shadow(
-            elevation = 6.dp,
+            elevation = 5.dp,
             shape = RoundedCornerShape(cornerRadius),
             clip = false,
-            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.18f else 0.25f),
-            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.18f else 0.25f)
+            ambientColor = Color.Black.copy(alpha = if (isDarkTheme) 0.20f else 0.28f),
+            spotColor = Color.Black.copy(alpha = if (isDarkTheme) 0.20f else 0.28f)
         )
-        // 3. 실시간 배경 흐림 레이어
+}
+
+/**
+ * 2. 실시간 배경 흐림 레이어 (반투명 기본 컬러를 채운 뒤 흐림 효과 적용)
+ */
+fun Modifier.clayGlassBlurBase(
+    isDarkTheme: Boolean,
+    cornerRadius: Dp = 24.dp,
+    blurRadius: Float = 25f
+): Modifier = composed {
+    val blurEffect = remember(blurRadius) {
+        RenderEffect.createBlurEffect(
+            blurRadius, blurRadius, android.graphics.Shader.TileMode.DECAL
+        ).asComposeRenderEffect()
+    }
+    
+    val baseColor = if (isDarkTheme) {
+        Color(0xFF1E1E1C).copy(alpha = 0.55f)
+    } else {
+        Color(0xFFECF3FF).copy(alpha = 0.45f) // 라이트 틴트 반투명
+    }
+
+    this
         .graphicsLayer {
             renderEffect = blurEffect
         }
         .clip(RoundedCornerShape(cornerRadius))
-        // 4. 3D 유리 광택 셰이더 및 그라데이션 보더
+        .background(baseColor)
+}
+
+/**
+ * 3. 3D 유리 광택 셰이더 및 극세 그라데이션 보더 레이어 (블러를 타지 않아 칼날같이 선명함)
+ */
+fun Modifier.clayGlassSpecular(
+    isDarkTheme: Boolean,
+    cornerRadius: Dp = 24.dp
+): Modifier = composed {
+    val glassShader = remember { RuntimeShader(GLASS_SHADER_SRC) }
+    
+    val specColor = if (isDarkTheme) {
+        Color(0xFF262622).copy(alpha = 0.35f)
+    } else {
+        Color(0xFFFFFFFF).copy(alpha = 0.50f)
+    }
+
+    val glassBrush = remember(specColor) {
+        object : ShaderBrush() {
+            override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader {
+                glassShader.setFloatUniform("uSize", size.width, size.height)
+                glassShader.setFloatUniform(
+                    "uColor",
+                    specColor.red,
+                    specColor.green,
+                    specColor.blue,
+                    specColor.alpha
+                )
+                return glassShader
+            }
+        }
+    }
+
+    val borderBrush = remember(isDarkTheme) {
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+            colors = if (isDarkTheme) {
+                listOf(
+                    Color.White.copy(alpha = 0.45f),
+                    Color.White.copy(alpha = 0.08f),
+                    Color.Black.copy(alpha = 0.30f)
+                )
+            } else {
+                listOf(
+                    Color.White.copy(alpha = 0.95f),
+                    Color.White.copy(alpha = 0.30f),
+                    Color(0xFF8AB4F8).copy(alpha = 0.50f)
+                )
+            }
+        )
+    }
+
+    this
+        .clip(RoundedCornerShape(cornerRadius))
         .background(glassBrush)
         .border(
             width = 0.8.dp,
@@ -226,8 +257,22 @@ fun Modifier.clayGlassBackground(
 }
 
 /**
- * 배경 흐림 이펙트가 자식 콘텐츠(Text, Icons 등)까지 침범하지 않도록,
- * 배경 블러 레이어와 콘텐츠 노출 레이어를 완전히 격리하여 시인성을 보호하는 컨테이너 컴포저블입니다.
+ * 하위 호환성을 위한 레거시 Modifier 조합 단축 함수
+ */
+fun Modifier.clayGlassBackground(
+    isDarkTheme: Boolean,
+    cornerRadius: Dp = 24.dp,
+    blurRadius: Float = 25f
+): Modifier {
+    return this
+        .clayGlassShadows(isDarkTheme, cornerRadius)
+        .clayGlassBlurBase(isDarkTheme, cornerRadius, blurRadius)
+        .clayGlassSpecular(isDarkTheme, cornerRadius)
+}
+
+/**
+ * 배경 흐림 이펙트가 자식 콘텐츠(Text, Icons 등)나 3D 광택 셰이더 및 테두리선(Border)까지 침범하지 않도록,
+ * 모든 요소를 논리적 드로잉 레이어로 완벽히 격리하여 입체감과 시인성을 극대화한 컨테이너 컴포저블입니다.
  */
 @Composable
 fun ClayGlassBox(
@@ -240,18 +285,28 @@ fun ClayGlassBox(
     Box(
         modifier = modifier
     ) {
-        // [Layer 1] 순수 배경 블러 및 유리 셰이더 레이어 (자식이 없으므로 텍스트 영향 없음)
+        // [Layer 0] Neumorphic 그림자 및 투명 틴트 글로우 (블러 없음, 배경 비침 확보)
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clayGlassBackground(
-                    isDarkTheme = isDarkTheme,
-                    cornerRadius = cornerRadius,
-                    blurRadius = blurRadius
-                )
+                .clayGlassShadows(isDarkTheme, cornerRadius)
+        )
+
+        // [Layer 1] 실시간 배경 블러 레이어 (블러 효과 적용)
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clayGlassBlurBase(isDarkTheme, cornerRadius, blurRadius)
+        )
+
+        // [Layer 2] 3D 유리 광택 셰이더 및 테두리 레이어 (블러 없음, 선명도 100%)
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clayGlassSpecular(isDarkTheme, cornerRadius)
         )
         
-        // [Layer 2] 선명함을 100% 보존해야 하는 상위 텍스트/상호작용 콘텐츠 레이어
+        // [Layer 3] 선명함을 100% 보존해야 하는 상위 텍스트/상호작용 콘텐츠 레이어
         Box(
             modifier = Modifier.fillMaxSize(),
             content = content
