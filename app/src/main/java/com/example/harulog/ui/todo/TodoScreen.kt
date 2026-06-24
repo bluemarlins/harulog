@@ -12,7 +12,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material3.ripple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -383,6 +385,55 @@ fun ScheduleCardItem(
     }
 }
 
+@Composable
+fun RoundCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    checkedColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val uncheckedBorderColor = if (isDark) DarkBorderColor else GrayBorderColor
+    val uncheckedBgColor = if (isDark) SurfaceDark else Canvas
+
+    Box(
+        modifier = modifier
+            .size(48.dp) // 모바일 UI 원칙 준수: 48dp x 48dp 터치 타겟 확보
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = ripple(
+                    bounded = false,
+                    radius = 24.dp,
+                    color = checkedColor
+                ),
+                onClick = { onCheckedChange(!checked) }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp) // 시각적 체크박스 지름
+                .clip(CircleShape)
+                .background(if (checked) checkedColor else uncheckedBgColor)
+                .border(
+                    width = 1.5.dp,
+                    color = if (checked) checkedColor else uncheckedBorderColor,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (checked) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TodoCardItem(
@@ -443,10 +494,10 @@ fun TodoCardItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
+            RoundCheckbox(
                 checked = todo.isCompleted,
                 onCheckedChange = { onToggle(todo) },
-                colors = CheckboxDefaults.colors(checkedColor = themeColor)
+                checkedColor = themeColor
             )
 
             Spacer(modifier = Modifier.width(8.dp))
