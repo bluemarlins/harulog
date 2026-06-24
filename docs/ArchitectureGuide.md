@@ -31,6 +31,9 @@ com.example.harulog
   * ViewModel은 상태를 StateFlow 형태의 `UiState` 단 하나로 묶어 화면에 단방향으로 전달한다.
   * Screen 컴포저블은 Stateless하게 유지하며, 사용자 이벤트는 ViewModel의 메서드를 호출하는 단방향 액션으로만 전달한다.
   * 데이터 구독 시 수명 주기를 안전하게 관리하기 위해 `collectAsStateWithLifecycle()`을 사용한다.
+* **Edge-to-Edge 및 시스템 인셋 대응**:
+  * 화면이 시스템 바(상태 바, 내비게이션 바) 영역 뒤까지 넓게 채워지도록 Edge-to-Edge 구조를 채택한다.
+  * 최상위 Scaffold의 `paddingValues`를 하위 스크린의 리스트(LazyColumn, LazyVerticalGrid 등)에 전달하여 `contentPadding`으로 처리하고, 입력 UI에는 `imePadding()`을 부모 컨테이너에 지정하여 시스템 바 및 키보드와의 겹침을 방지한다.
 
 ### 2.2 데이터 레이어 (Data Layer)
 * **Repository 패턴**: UI 레이어(ViewModel)는 오직 Repository 인터페이스만 참조하며, 데이터 소스의 구체적인 구현(Room DB)은 숨긴다.

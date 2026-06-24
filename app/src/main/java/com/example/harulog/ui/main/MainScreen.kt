@@ -43,6 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -154,13 +156,15 @@ internal fun MainContent(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .consumeWindowInsets(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (isTablet) {
                 // ── Tablet Layout: 좌측 Navigation Rail + Split View ──────────
-                Row(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                ) {
                     // Floating Vertical Navigation Bar Card (Pinterest style)
                     Card(
                         modifier = Modifier
@@ -305,6 +309,7 @@ internal fun MainContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars)
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 0.dp)
                 ) {
                     AnimatedContent(
@@ -321,6 +326,7 @@ internal fun MainContent(
                         label = "MobileTabTransition",
                         modifier = Modifier.weight(1f)
                     ) { targetTab ->
+                        val commonContentPadding = PaddingValues(bottom = 96.dp + paddingValues.calculateBottomPadding())
                         when (targetTab) {
                             // 0: 캘린더 — 상단 캘린더 그리드 + 하단 할 일/일정 리스트
                             0 -> {
@@ -336,7 +342,8 @@ internal fun MainContent(
                                     )
                                     com.example.harulog.ui.todo.TodoScreen(
                                         viewModel = todoViewModel,
-                                        modifier  = Modifier.weight(1f)
+                                        modifier  = Modifier.weight(1f),
+                                        contentPadding = commonContentPadding
                                     )
                                 }
                             }
@@ -344,14 +351,16 @@ internal fun MainContent(
                             1 -> {
                                 DiaryScreen(
                                     viewModel = diaryViewModel,
-                                    modifier  = Modifier.fillMaxSize()
+                                    modifier  = Modifier.fillMaxSize(),
+                                    contentPadding = commonContentPadding
                                 )
                             }
                             // 2: 대시보드 (AI 요약)
                             2 -> {
                                 AiDashboardScreen(
                                     todoViewModel = todoViewModel,
-                                    modifier      = Modifier.fillMaxSize()
+                                    modifier      = Modifier.fillMaxSize(),
+                                    contentPadding = commonContentPadding
                                 )
                             }
                             // 3: 설정
@@ -361,7 +370,8 @@ internal fun MainContent(
                                     todoViewModel = todoViewModel,
                                     onExportBackup = onExportBackup,
                                     onImportBackup = onImportBackup,
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = commonContentPadding
                                 )
                             }
                         }
@@ -374,6 +384,7 @@ internal fun MainContent(
                 Card(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
                         .fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -702,12 +713,21 @@ private fun SettingsScreen(
     todoViewModel: TodoViewModel,
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
+    val layoutDirection = LocalLayoutDirection.current
+    val mergedPadding = PaddingValues(
+        start = 16.dp + contentPadding.calculateStartPadding(layoutDirection),
+        top = 16.dp + contentPadding.calculateTopPadding(),
+        end = 16.dp + contentPadding.calculateEndPadding(layoutDirection),
+        bottom = contentPadding.calculateBottomPadding()
+    )
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 300.dp),
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = mergedPadding,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

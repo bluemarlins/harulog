@@ -41,7 +41,8 @@ import java.util.Locale
 @Composable
 fun TodoScreen(
     viewModel: TodoViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     DashboardPane(
@@ -51,7 +52,8 @@ fun TodoScreen(
         onDeleteTodoSchedule = viewModel::deleteTodoSchedule,
         onAddTodoSchedule = viewModel::addTodoSchedule,
         onUpdateTodoSchedule = viewModel::updateTodoSchedule,
-        modifier = modifier
+        modifier = modifier,
+        contentPadding = contentPadding
     )
 }
 
@@ -64,8 +66,8 @@ fun DashboardPane(
     onDeleteTodoSchedule: (MergedTodoScheduleItem) -> Unit,
     onAddTodoSchedule: (String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
     onUpdateTodoSchedule: (MergedTodoScheduleItem, String, String?, Boolean, LocalDate, LocalTime?, LocalTime?, CategoryType, Boolean) -> Unit,
-    modifier: Modifier = Modifier
-
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     var isAddDialogOpen by remember { mutableStateOf(false) }
     var selectedItemForOptions by remember { mutableStateOf<MergedTodoScheduleItem?>(null) }
@@ -174,7 +176,7 @@ fun DashboardPane(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 96.dp)
+                    contentPadding = contentPadding
                 ) {
                     if (state.schedules.isNotEmpty()) {
                         item {
@@ -537,6 +539,7 @@ fun AddEditItemDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
+                .imePadding()
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

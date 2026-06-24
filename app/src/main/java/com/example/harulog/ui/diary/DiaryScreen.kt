@@ -39,7 +39,8 @@ import java.util.Locale
 @Composable
 fun DiaryScreen(
     viewModel: DiaryViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     DiaryPane(
@@ -47,7 +48,8 @@ fun DiaryScreen(
         onSaveDiary   = viewModel::saveDiary,
         onDeleteDiary = { viewModel.deleteDiary() },
         onSelectDate  = viewModel::selectDate,
-        modifier      = modifier
+        modifier      = modifier,
+        contentPadding = contentPadding
     )
 }
 
@@ -58,7 +60,8 @@ fun DiaryPane(
     onSaveDiary: (String) -> Unit,
     onDeleteDiary: () -> Unit,
     onSelectDate: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     val selectedDateStr = state.selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     var text by remember(selectedDateStr, state.currentDiary) {
@@ -107,7 +110,7 @@ fun DiaryPane(
     }
 
     Card(
-        modifier = modifier
+        modifier = modifier.imePadding()
             .shadow(4.dp, RoundedCornerShape(24.dp))
             .border(1.dp, GrayBorderColor, RoundedCornerShape(24.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -264,8 +267,8 @@ fun DiaryPane(
                     }
                 }
             }
-            // 모바일 Floating Bottom Bar 영역만큼 하단 여백 추가
-            Spacer(modifier = Modifier.height(96.dp))
+            // 모바일 Floating Bottom Bar 및 시스템 내비게이션 바 영역만큼 하단 여백 추가
+            Spacer(modifier = Modifier.height(contentPadding.calculateBottomPadding()))
         }
     }
 }

@@ -69,7 +69,8 @@ private val FredokaFamily = FontFamily(
 @Composable
 fun AiDashboardScreen(
     todoViewModel: TodoViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     val state by todoViewModel.uiState.collectAsStateWithLifecycle()
     val today = LocalDate.now()
@@ -106,7 +107,8 @@ fun AiDashboardScreen(
         weekStart           = weekStart,
         weekEnd             = weekEnd,
         dashboardSummary    = dashboardSummary,
-        modifier            = modifier
+        modifier            = modifier,
+        contentPadding      = contentPadding
     )
 }
 
@@ -122,7 +124,8 @@ fun AiDashboardContent(
     weekStart: LocalDate,
     weekEnd: LocalDate,
     dashboardSummary: MonthlyDashboardSummary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 96.dp)
 ) {
     val currentMonth = YearMonth.from(today)
 
@@ -131,7 +134,7 @@ fun AiDashboardContent(
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(bottom = 96.dp)
+        contentPadding = contentPadding
     ) {
         // ── ① 캘리그라피 월 헤더 ──────────────────────────────────────────
         item {
