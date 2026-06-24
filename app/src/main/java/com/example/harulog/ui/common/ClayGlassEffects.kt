@@ -68,9 +68,9 @@ private const val GLASS_SHADER_SRC = """
         }
         col.rgb += gloss;
 
-        // 5. Fine frosted noise
+        // 5. Fine frosted noise - Increased to 0.065 to obscure overlapping background text
         float noise = fract(sin(dot(coord, float2(12.9898, 78.233))) * 43758.5453);
-        col.rgb += (noise - 0.5) * 0.035;
+        col.rgb += (noise - 0.5) * 0.065;
 
         return col;
     }
@@ -184,9 +184,9 @@ fun Modifier.clayGlassBlurBase(
     }
     
     val baseColor = if (isDarkTheme) {
-        Color(0xFF1E1E1C).copy(alpha = 0.55f)
+        Color(0xFF1E1E1C).copy(alpha = 0.82f)
     } else {
-        Color(0xFFECF3FF).copy(alpha = 0.45f) // 라이트 틴트 반투명
+        Color(0xFFECF3FF).copy(alpha = 0.78f) // 라이트 틴트 반투명 강화
     }
 
     this
@@ -207,9 +207,9 @@ fun Modifier.clayGlassSpecular(
     val glassShader = remember { RuntimeShader(GLASS_SHADER_SRC) }
     
     val specColor = if (isDarkTheme) {
-        Color(0xFF262622).copy(alpha = 0.35f)
+        Color(0xFF262622).copy(alpha = 0.45f)
     } else {
-        Color(0xFFFFFFFF).copy(alpha = 0.50f)
+        Color(0xFFFFFFFF).copy(alpha = 0.65f)
     }
 
     val glassBrush = remember(specColor) {
