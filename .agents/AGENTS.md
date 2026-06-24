@@ -8,7 +8,7 @@
 
 ### 1.1 개발 환경 및 플랫폼 스펙 (Environment Specs)
 * **Kotlin & Jetpack Compose**: 모든 UI 개발은 선언형 UI 프레임워크인 Jetpack Compose와 최신 Kotlin Idiom(Coroutines, Flow, Serialization 등)을 사용하여 개발한다.
-* **최소 지원 SDK (minSDK 31)**: 앱의 최소 지원 API 레벨은 **31 (Android 12)**로 제한하며, 코드 생성 및 API 사용 시 API level 31 이상에서 호환되는 현대적인 Android API를 우선적으로 사용한다. 하위 호환 분기는 불필요하다.
+* **최소 지원 SDK (minSDK 33)**: 앱의 최소 지원 API 레벨은 **33 (Android 13)**으로 제한하며, 코드 생성 및 API 사용 시 API level 33 이상에서 호환되는 현대적인 Android API를 우선적으로 사용한다. 하위 호환 분기는 불필요하다.
 
 ### 1.2 UI와 비즈니스 로직의 엄격한 분리 (UDF)
 * **Stateless UI**: 모든 컴포저블(Composable)은 가급적 상태를 직접 가지지 않고, 외부에서 전달된 `UiState`와 이벤트 콜백만 바인딩해야 한다.

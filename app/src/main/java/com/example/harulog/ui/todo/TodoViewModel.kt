@@ -58,7 +58,8 @@ data class MonthlyDashboardSummary(
     val mostFrequentScheduleTitle: String? = null,
     val mostFrequentScheduleCount: Int = 0,
     val totalScheduleCount: Int = 0,
-    val salaryDayDiff: Int = 0   // 월급날(21일)까지 남은 일수, 음수=지남
+    val salaryDayDiff: Int = 0,   // 월급날(21일)까지 남은 일수, 음수=지남
+    val meetingSchedules: List<TodoScheduleEntity> = emptyList() // 회의 일정 목록
 )
 
 @HiltViewModel
@@ -377,22 +378,28 @@ class TodoViewModel @Inject constructor(
             val mostFreqTitle = mostFrequent?.key
             val mostFreqCount = mostFrequent?.value ?: 0
 
+            // 6. 회의로 추정되는 일정 추출 ("회의", "논의", "검토")
+            val meetingSchedules = monthSchedules.filter {
+                !it.isTodo && (it.title.contains("회의") || it.title.contains("논의") || it.title.contains("검토"))
+            }.sortedBy { it.eventDate }
+
             Pair(
                 Triple(workoutCount, motivation, Pair(leaveCount, leaveDates)),
                 Triple(
                     Triple(longestTitle, periodText, maxDuration),
                     Triple(completedTodoCount, totalTodoCount, Pair(mostFreqTitle, mostFreqCount)),
-                    monthSchedules.map { it.eventDate }.distinct().size
+                    Pair(monthSchedules.map { it.eventDate }.distinct().size, meetingSchedules)
                 )
             )
         }.combine(themeSettingsManager.salaryDay) { data, salaryDayOfMonth ->
             val (part1, part2) = data
             val (workoutCount, motivation, leavePair) = part1
             val (leaveCount, leaveDates) = leavePair
-            val (longestPart, todoPart, totalScheduleCount) = part2
+            val (longestPart, todoPart, scheduleCountAndMeetings) = part2
             val (longestTitle, periodText, maxDuration) = longestPart
             val (completedTodoCount, totalTodoCount, freqPair) = todoPart
             val (mostFreqTitle, mostFreqCount) = freqPair
+            val (totalScheduleCount, meetingSchedules) = scheduleCountAndMeetings
 
             // 6. 월급날 D-Day (설정된 일수 기준, 주말인 경우 직전 금요일로 보정)
             val today = LocalDate.now()
@@ -419,7 +426,8 @@ class TodoViewModel @Inject constructor(
                 mostFrequentScheduleTitle = mostFreqTitle,
                 mostFrequentScheduleCount = mostFreqCount,
                 totalScheduleCount = totalScheduleCount,
-                salaryDayDiff = salaryDiff
+                salaryDayDiff = salaryDiff,
+                meetingSchedules = meetingSchedules
             )
         }
     }

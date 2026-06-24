@@ -195,7 +195,8 @@ fun AiDashboardContent(
                 longestTitle     = dashboardSummary.longestScheduleTitle,
                 longestDuration  = dashboardSummary.longestScheduleDuration,
                 longestPeriod    = dashboardSummary.longestSchedulePeriodText,
-                totalScheduleCount = dashboardSummary.totalScheduleCount
+                totalScheduleCount = dashboardSummary.totalScheduleCount,
+                meetingSchedules = dashboardSummary.meetingSchedules
             )
         }
 
@@ -549,7 +550,8 @@ private fun MonthlyScheduleSummaryCard(
     longestTitle: String?,
     longestDuration: Int,
     longestPeriod: String?,
-    totalScheduleCount: Int
+    totalScheduleCount: Int,
+    meetingSchedules: List<TodoScheduleEntity>
 ) {
     val isDark      = MaterialTheme.colorScheme.background == DarkBackground
     val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
@@ -605,6 +607,52 @@ private fun MonthlyScheduleSummaryCard(
                     else "연속 2일 이상 일정 없음",
             tint  = MaterialTheme.colorScheme.secondary
         )
+
+        // 구분선
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.8.dp)
+                .background(borderColor)
+        )
+
+        // 이번 달 주요 회의/논의/검토 일정
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "이번 달 주요 회의 및 논의",
+                fontSize   = 11.sp,
+                color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+            if (meetingSchedules.isEmpty()) {
+                Text(
+                    "예정된 회의 일정이 없습니다.",
+                    fontSize   = 13.sp,
+                    color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                meetingSchedules.forEach { meeting ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val formatter = DateTimeFormatter.ofPattern("M/d (E)", Locale.KOREAN)
+                        Text(
+                            text = meeting.title,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = meeting.eventDate.format(formatter),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

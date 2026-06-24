@@ -2,6 +2,12 @@ package com.example.harulog.ui.main
 
 import android.net.Uri
 import android.widget.Toast
+import android.graphics.RuntimeShader
+import android.graphics.RenderEffect
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.Canvas
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -14,6 +20,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -62,6 +69,9 @@ import com.example.harulog.ui.common.SegmentedControl
 import com.example.harulog.ui.todo.TodoViewModel
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
+import com.example.harulog.ui.common.clayGlassBackground
+import com.example.harulog.ui.common.LiquidIndicator
 
 private data class TabItem(
     val index: Int,
@@ -378,80 +388,58 @@ internal fun MainContent(
                     }
                 }
 
-                // 모바일용 Floating Bottom Navigation Bar Overlay (Text-only Segmented Control with spring slider)
-                val isDark = MaterialTheme.colorScheme.background == DarkBackground
-                val borderColor = if (isDark) DarkBorderColor else GrayBorderColor
-                Card(
+                // ── Apple Liquid Glass Bottom Navigation Bar ──────────────────
+                val isDarkTheme = MaterialTheme.colorScheme.background == DarkBackground
+
+                Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.25f))
+                        .clayGlassBackground(isDarkTheme = isDarkTheme)
+                        .fillMaxWidth()
+                        .height(56.dp)
                 ) {
+                    // [Layer 2] Liquid Indicator Overlay
                     BoxWithConstraints(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
+                            .fillMaxSize()
                             .padding(4.dp)
                     ) {
-                        val tabCount = 4
-                        val tabWidth = maxWidth / tabCount
-
-                        // 슬라이딩 하이라이트 배경 칩 위치 계산 (Spring Physics 적용)
-                        val highlightOffset by animateDpAsState(
-                            targetValue = tabWidth * currentTab,
-                            animationSpec = spring(
-                                dampingRatio = 0.82f, // 통통 튀지 않고 부드럽게 안착하는 댐핑 비율
-                                stiffness = 300f     // StiffnessMedium 수준
-                            ),
-                            label = "NavHighlightOffset"
+                        LiquidIndicator(
+                            currentTab = currentTab,
+                            tabCount = 4,
+                            isDarkTheme = isDarkTheme
                         )
+                    }
 
-                        // Highlight Slider Background
-                        Box(
-                            modifier = Modifier
-                                .offset(x = highlightOffset)
-                                .width(tabWidth)
-                                .fillMaxHeight()
-                                .padding(2.dp)
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.09f))
-                        )
+                    // [Layer 3] Interactive Tab Content (Text and Clickable)
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
+                        labels.forEachIndexed { index, label ->
+                            val isSelected = currentTab == index
+                            val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
 
-                        // Tab Texts Row
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val labels = listOf("캘린더", "다이어리", "대시보드", "설정")
-                            labels.forEachIndexed { index, label ->
-                                val isSelected = currentTab == index
-                                val tintColor = if (isSelected) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
-                                        ) { currentTab = index },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        color = tintColor,
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { currentTab = index },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = tintColor,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
                             }
                         }
                     }
