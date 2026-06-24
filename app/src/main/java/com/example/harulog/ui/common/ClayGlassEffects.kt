@@ -99,18 +99,7 @@ private const val LIQUID_SHADER_SRC = """
         float threshold = 0.68;
         if (total > threshold) {
             float alpha = smoothstep(threshold, threshold + 0.04, total);
-            float4 col = uColor * alpha;
-            
-            // Bevel highlight for liquid jelly capsule
-            float d = min(d1, d2);
-            if (d < 0.0) {
-                float edgeDist = abs(d);
-                if (edgeDist < 2.5) {
-                    float innerHighlight = (1.0 - (edgeDist / 2.5)) * 0.30;
-                    col.rgb += innerHighlight;
-                }
-            }
-            return col;
+            return uColor * alpha;
         }
         return half4(0.0);
     }
