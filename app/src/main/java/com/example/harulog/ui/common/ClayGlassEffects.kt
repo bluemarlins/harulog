@@ -351,15 +351,13 @@ fun BoxWithConstraintsScope.LiquidIndicator(
     val halfW = (tabWidthPx * 0.80f) / 2f
     val halfH = (heightPx * 0.78f) / 2f
 
-    // remember 키에서 animatingX를 제외하여 매 프레임 브러시 재생성을 방지하고 애니메이션 성능 랙 완벽 차단
-    val indicatorBrush = remember(targetX, isDarkTheme) {
-        object : ShaderBrush() {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        // 드로잉 루프 내에서 직접 브러시를 임시 인스턴스화하여 매 프레임 실시간 uniform 바인딩 및 잔상 해결
+        val brush = object : ShaderBrush() {
             override fun createShader(size: androidx.compose.ui.geometry.Size): android.graphics.Shader {
                 val centerY = size.height / 2f
-                // animatingX는 Compose State이므로 매 프레임 그리기 페이즈만 무효화(Invalidate)시켜 렌더링함
                 liquidShader.setFloatUniform("uCenter1", animatingX, centerY)
                 liquidShader.setFloatUniform("uCenter2", targetX, centerY)
-                
                 liquidShader.setFloatUniform("uHalfSize", halfW, halfH)
                 liquidShader.setFloatUniform("uRadius", radiusPx)
                 
@@ -373,9 +371,6 @@ fun BoxWithConstraintsScope.LiquidIndicator(
                 return liquidShader
             }
         }
-    }
-    
-    Canvas(modifier = modifier.fillMaxSize()) {
-        drawRect(brush = indicatorBrush)
+        drawRect(brush = brush)
     }
 }
