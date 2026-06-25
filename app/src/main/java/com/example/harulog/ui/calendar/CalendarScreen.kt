@@ -420,10 +420,9 @@ fun DateCell(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(vertical = 1.dp, horizontal = 1.dp)
         ) {
-            // Date Circle or Capsule based on viewMode
-            val isWeekMode = state.viewMode == CalendarViewMode.WEEK
-            val cellSizeModifier = if (isWeekMode) Modifier.size(width = 32.dp, height = 48.dp) else Modifier.size(26.dp)
-            val cellShape = if (isWeekMode) RoundedCornerShape(16.dp) else CircleShape
+            // Date Circle aligned to 26.dp for day, week, and month viewModes
+            val cellSizeModifier = Modifier.size(26.dp)
+            val cellShape = CircleShape
 
             Box(
                 modifier = Modifier
